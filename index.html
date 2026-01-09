@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Funhouse Camera</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #ff3366;
+            --secondary: #00d4ff;
+            --accent: #ffcc00;
+            --bg-dark: #1a1a2e;
+            --bg-card: #16213e;
+            --text: #ffffff;
+            --text-dim: #a0a0c0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            max-width: 100%;
+        }
+
+        header {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, var(--primary), #ff6b35);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { transform: translate(-10%, -10%); }
+            50% { transform: translate(10%, 10%); }
+        }
+
+        h1 {
+            font-family: 'Fredoka One', cursive;
+            font-size: 1.8rem;
+            text-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h1 i {
+            animation: bounce 1s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0) rotate(-10deg); }
+            50% { transform: translateY(-5px) rotate(10deg); }
+        }
+
+        .camera-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            gap: 15px;
+        }
+
+        .camera-container {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            aspect-ratio: 4/3;
+            background: #000;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(255, 51, 102, 0.3),
+                        inset 0 0 0 4px rgba(255,255,255,0.1);
+        }
+
+        #video, #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #video {
+            transform: scaleX(-1);
+        }
+
+        #canvas {
+            pointer-events: none;
+        }
+
+        .effect-cursor {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border: 3px dashed var(--accent);
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            box-shadow: 0 0 20px rgba(255, 204, 0, 0.5);
+        }
+
+        .effect-cursor.visible {
+            opacity: 1;
+            animation: pulse-ring 1.5s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.5; }
+        }
+
+        .no-camera {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: var(--text-dim);
+        }
+
+        .no-camera i {
+            font-size: 4rem;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
+            font-size: 16px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-capture {
+            background: linear-gradient(135deg, var(--primary), #ff6b35);
+            color: white;
+            box-shadow: 0 4px 20px rgba(255, 51, 102, 0.4);
+        }
+
+        .btn-capture:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 30px rgba(255, 51, 102, 0.6);
+        }
+
+        .btn-capture:active {
+            transform: scale(0.95);
+        }
+
+        .btn-gallery {
+            background: linear-gradient(135deg, var(--secondary), #0099cc);
+            color: white;
+            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-gallery:hover {
+            transform: scale(1.05);
+        }
+
+        .effects-section {
+            padding: 15px;
+            background: var(--bg-card);
+            border-radius: 20px 20px 0 0;
+        }
+
+        .effects-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 0 5px;
+        }
+
+        .effects-title {
+            font-family: 'Fredoka One', cursive;
+            font-size: 1.1rem;
+            color: var(--accent);
+        }
+
+        .effect-info {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        .effects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            gap: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 5px;
+        }
+
+        .effects-grid::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .effects-grid::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+        }
+
+        .effects-grid::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 3px;
+        }
+
+        .effect-btn {
+            background: rgba(255,255,255,0.05);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 10px 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .effect-btn:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-2px);
+        }
+
+        .effect-btn.active {
+            border-color: var(--accent);
+            background: rgba(255, 204, 0, 0.15);
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.3);
+        }
+
+        .effect-btn i {
+            font-size: 1.3rem;
+        }
+
+        .effect-btn span {
+            font-size: 0.7rem;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        /* Flash effect */
+        .flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .flash.active {
+            animation: flash 0.3s ease-out;
+        }
+
+        @keyframes flash {
+            0% { opacity: 0.9; }
+            100% { opacity: 0; }
+        }
+
+        /* Gallery Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 2000;
+            overflow-y: auto;
+        }
+
+        .modal.open {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-header {
+            position: sticky;
+            top: 0;
+            background: var(--bg-dark);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .modal-title {
+            font-family: 'Fredoka One', cursive;
+            font-size: 1.4rem;
+        }
+
+        .btn-close {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-close:hover {
+            background: var(--primary);
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            padding: 15px;
+        }
+
+        .gallery-item {
+            position: relative;
+            aspect-ratio: 4/3;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.02);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .gallery-item .delete-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255, 51, 102, 0.9);
+            border: none;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .gallery-item:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .gallery-item .save-btn {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            background: rgba(0, 212, 255, 0.9);
+            border: none;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gallery-item:hover .save-btn {
+            opacity: 1;
+        }
+
+        .empty-gallery {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-dim);
+        }
+
+        .empty-gallery i {
+            font-size: 4rem;
+            margin-bottom: 15px;
+            opacity: 0.3;
+        }
+
+        /* Lightbox */
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.98);
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .lightbox.open {
+            display: flex;
+        }
+
+        .lightbox img {
+            max-width: 95%;
+            max-height: 90%;
+            border-radius: 10px;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-card);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 4000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        @media (max-width: 480px) {
+            h1 { font-size: 1.4rem; }
+            .effects-grid { grid-template-columns: repeat(4, 1fr); }
+            .effect-btn { padding: 8px 5px; }
+            .effect-btn i { font-size: 1.1rem; }
+            .effect-btn span { font-size: 0.6rem; }
+        }
+
+        .dark body { background: var(--bg-dark); }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1><i class="fas fa-camera-retro"></i> Funhouse Camera</h1>
+        </header>
+
+        <section class="camera-section">
+            <div class="camera-container" id="cameraContainer">
+                <video id="video" autoplay playsinline muted></video>
+                <canvas id="canvas"></canvas>
+                <div class="effect-cursor" id="effectCursor"></div>
+                <div class="no-camera" id="noCamera">
+                    <i class="fas fa-video-slash"></i>
+                    <p>Camera not available</p>
+                    <p style="font-size: 0.9rem; margin-top: 10px;">Please allow camera access</p>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-capture" id="captureBtn">
+                    <i class="fas fa-camera"></i> Snap!
+                </button>
+                <button class="btn btn-gallery" id="galleryBtn">
+                    <i class="fas fa-images"></i> Gallery <span id="photoCount">(0)</span>
+                </button>
+            </div>
+        </section>
+
+        <section class="effects-section">
+            <div class="effects-header">
+                <span class="effects-title"><i class="fas fa-magic"></i> Effects</span>
+                <span class="effect-info">Tap camera to move effect</span>
+            </div>
+            <div class="effects-grid" id="effectsGrid"></div>
+        </section>
+    </div>
+
+    <div class="flash" id="flash"></div>
+
+    <div class="modal" id="galleryModal">
+        <div class="modal-header">
+            <span class="modal-title"><i class="fas fa-images"></i> Your Photos</span>
+            <button class="btn-close" id="closeGallery"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="gallery-grid" id="galleryGrid"></div>
+        <div class="empty-gallery" id="emptyGallery">
+            <i class="fas fa-camera"></i>
+            <p>No photos yet!</p>
+            <p style="font-size: 0.9rem;">Start snapping some fun pics</p>
+        </div>
+    </div>
+
+    <div class="lightbox" id="lightbox">
+        <button class="lightbox-close" id="closeLightbox"><i class="fas fa-times"></i></button>
+        <img id="lightboxImg" src="" alt="Photo">
+    </div>
+
+    <div class="toast" id="toast">Photo saved!</div>
+
+    <script>
+        // Dark mode detection
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            document.documentElement.classList.toggle('dark', event.matches);
+        });
+
+        // Effects configuration
+        const effects = [
+            { id: 'none', name: 'Normal', icon: 'fa-circle', movable: false },
+            { id: 'stretch', name: 'Stretch', icon: 'fa-arrows-alt-h', movable: true },
+            { id: 'squeeze', name: 'Squeeze', icon: 'fa-compress-alt', movable: true },
+            { id: 'twirl', name: 'Twirl', icon: 'fa-sync-alt', movable: true },
+            { id: 'bulge', name: 'Bulge', icon: 'fa-expand', movable: true },
+            { id: 'pinch', name: 'Pinch', icon: 'fa-compress', movable: true },
+            { id: 'fisheye', name: 'Fish Eye', icon: 'fa-fish', movable: true },
+            { id: 'mirror-h', name: 'Mirror H', icon: 'fa-arrows-alt-h', movable: false },
+            { id: 'mirror-v', name: 'Mirror V', icon: 'fa-arrows-alt-v', movable: false },
+            { id: 'kaleidoscope', name: 'Kaleidoscope', icon: 'fa-snowflake', movable: false },
+            { id: 'pixelate', name: 'Pixelate', icon: 'fa-th', movable: false },
+            { id: 'rgbsplit', name: 'RGB Split', icon: 'fa-palette', movable: false },
+            { id: 'wave', name: 'Wave', icon: 'fa-water', movable: false },
+            { id: 'thermal', name: 'Thermal', icon: 'fa-temperature-high', movable: false },
+            { id: 'comic', name: 'Pop Art', icon: 'fa-mask', movable: false },
+            { id: 'glitch', name: 'Glitch', icon: 'fa-bolt', movable: false },
+            { id: 'vintage', name: 'Vintage', icon: 'fa-film', movable: false },
+            { id: 'invert', name: 'Negative', icon: 'fa-adjust', movable: false },
+            { id: 'emboss', name: 'Emboss', icon: 'fa-stamp', movable: false },
+            { id: 'posterize', name: 'Posterize', icon: 'fa-layer-group', movable: false }
+        ];
+
+        // App state
+        let currentEffect = 'none';
+        let effectX = 0.5;
+        let effectY = 0.5;
+        let photos = [];
+        let animationId = null;
+
+        // DOM elements
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const cameraContainer = document.getElementById('cameraContainer');
+        const effectCursor = document.getElementById('effectCursor');
+        const noCamera = document.getElementById('noCamera');
+        const effectsGrid = document.getElementById('effectsGrid');
+        const captureBtn = document.getElementById('captureBtn');
+        const galleryBtn = document.getElementById('galleryBtn');
+        const flash = document.getElementById('flash');
+        const galleryModal = document.getElementById('galleryModal');
+        const galleryGrid = document.getElementById('galleryGrid');
+        const emptyGallery = document.getElementById('emptyGallery');
+        const lightbox = document.getElementById('lightbox');
+        const lightboxImg = document.getElementById('lightboxImg');
+        const toast = document.getElementById('toast');
+        const photoCount = document.getElementById('photoCount');
+
+        // Initialize effects grid
+        function initEffects() {
+            effectsGrid.innerHTML = effects.map(effect => `
+                <button class="effect-btn ${effect.id === 'none' ? 'active' : ''}"
+                        data-effect="${effect.id}"
+                        data-movable="${effect.movable}">
+                    <i class="fas ${effect.icon}"></i>
+                    <span>${effect.name}</span>
+                </button>
+            `).join('');
+
+            effectsGrid.addEventListener('click', (e) => {
+                const btn = e.target.closest('.effect-btn');
+                if (!btn) return;
+
+                document.querySelectorAll('.effect-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentEffect = btn.dataset.effect;
+
+                const isMovable = btn.dataset.movable === 'true';
+                effectCursor.classList.toggle('visible', isMovable && currentEffect !== 'none');
+            });
+        }
+
+        // Camera initialization
+        async function initCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+                    audio: false
+                });
+                video.srcObject = stream;
+                noCamera.style.display = 'none';
+
+                video.onloadedmetadata = () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    renderLoop();
+                };
+            } catch (err) {
+                console.log('Camera error:', JSON.stringify(err));
+                noCamera.style.display = 'block';
+            }
+        }
+
+        // Effect position handling
+        function handleEffectPosition(e) {
+            const effect = effects.find(ef => ef.id === currentEffect);
+            if (!effect || !effect.movable) return;
+
+            const rect = cameraContainer.getBoundingClientRect();
+            let clientX, clientY;
+
+            if (e.touches) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            effectX = (clientX - rect.left) / rect.width;
+            effectY = (clientY - rect.top) / rect.height;
+
+            effectCursor.style.left = `${effectX * 100}%`;
+            effectCursor.style.top = `${effectY * 100}%`;
+        }
+
+        cameraContainer.addEventListener('click', handleEffectPosition);
+        cameraContainer.addEventListener('touchstart', handleEffectPosition);
+
+        // Apply effects
+        function applyEffect(imageData) {
+            const data = imageData.data;
+            const width = imageData.width;
+            const height = imageData.height;
+            const centerX = effectX * width;
+            const centerY = effectY * height;
+            const radius = Math.min(width, height) * 0.35;
+
+            switch (currentEffect) {
+                case 'stretch':
+                    return applyDistortion(imageData, (x, y) => {
+                        const dx = x - centerX;
+                        const dy = y - centerY;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < radius) {
+                            const factor = 1 + 0.5 * (1 - dist / radius);
+                            return [centerX + dx * factor, y];
+                        }
+                        return [x, y];
+                    });
+
+                case 'squeeze':
+                    return applyDistortion(imageData, (x, y) => {
+                        const dx = x - centerX;
+                        const dy = y - centerY;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < radius) {
+                            const factor = 1 + 0.5 * (1 - dist / radius);
+                            return [x, centerY + dy * factor];
+                        }
+                        return [x, y];
+                    });
+
+                case 'twirl':
+                    return applyDistortion(imageData, (x, y) => {
+                        const dx = x - centerX;
+                        const dy = y - centerY;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < radius) {
+                            const angle = (1 - dist / radius) * Math.PI * 1.5;
+                            const cos = Math.cos(angle);
+                            const sin = Math.sin(angle);
+                            return [centerX + dx * cos - dy * sin, centerY + dx * sin + dy * cos];
+                        }
+                        return [x, y];
+                    });
+
+                case 'bulge':
+                    return applyDistortion(imageData, (x, y) => {
+                        const dx = x - centerX;
+                        const dy = y - centerY;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < radius) {
+                            const factor = Math.pow(dist / radius, 0.5);
+                            return [centerX + dx * factor, centerY + dy * factor];
+                        }
+                        return [x, y];
+                    });
+
+                case 'pinch':
+                    return applyDistortion(imageData, (x, y) => {
+                        const dx = x - centerX;
+                        const dy = y - centerY;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < radius) {
+                            const factor = Math.pow(dist / radius, 2);
+                            return [centerX + dx * factor, centerY + dy * factor];
+                        }
+                        return [x, y];
+                    });
+
+                case 'fisheye':
+                    return applyDistortion(imageData, (x, y) => {
+                        const dx = x - centerX;
+                        const dy = y - centerY;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < radius) {
+                            const r = dist / radius;
+                            const theta = Math.atan2(dy, dx);
+                            const newR = radius * Math.pow(r, 1.5);
+                            return [centerX + newR * Math.cos(theta), centerY + newR * Math.sin(theta)];
+                        }
+                        return [x, y];
+                    });
+
+                case 'mirror-h':
+                    return applyDistortion(imageData, (x, y) => [width - x, y]);
+
+                case 'mirror-v':
+                    return applyDistortion(imageData, (x, y) => [x, height - y]);
+
+                case 'kaleidoscope':
+                    return applyDistortion(imageData, (x, y) => {
+                        const cx = width / 2, cy = height / 2;
+                        const dx = x - cx, dy = y - cy;
+                        let angle = Math.atan2(dy, dx);
+                        const segments = 8;
+                        const segmentAngle = (2 * Math.PI) / segments;
+                        angle = Math.abs((angle % segmentAngle) - segmentAngle / 2);
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        return [cx + dist * Math.cos(angle), cy + dist * Math.sin(angle)];
+                    });
+
+                case 'pixelate':
+                    const pixelSize = 12;
+                    for (let py = 0; py < height; py += pixelSize) {
+                        for (let px = 0; px < width; px += pixelSize) {
+                            const idx = (py * width + px) * 4;
+                            const r = data[idx], g = data[idx + 1], b = data[idx + 2];
+                            for (let dy = 0; dy < pixelSize && py + dy < height; dy++) {
+                                for (let dx = 0; dx < pixelSize && px + dx < width; dx++) {
+                                    const i = ((py + dy) * width + (px + dx)) * 4;
+                                    data[i] = r; data[i + 1] = g; data[i + 2] = b;
+                                }
+                            }
+                        }
+                    }
+                    return imageData;
+
+                case 'rgbsplit':
+                    const offset = 8;
+                    const copy = new Uint8ClampedArray(data);
+                    for (let i = 0; i < data.length; i += 4) {
+                        const x = (i / 4) % width;
+                        if (x > offset) data[i] = copy[i - offset * 4];
+                        if (x < width - offset) data[i + 2] = copy[i + 2 + offset * 4];
+                    }
+                    return imageData;
+
+                case 'wave':
+                    const time = Date.now() / 500;
+                    return applyDistortion(imageData, (x, y) => {
+                        const waveX = Math.sin(y / 20 + time) * 15;
+                        const waveY = Math.sin(x / 25 + time) * 10;
+                        return [x + waveX, y + waveY];
+                    });
+
+                case 'thermal':
+                    for (let i = 0; i < data.length; i += 4) {
+                        const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                        if (avg < 85) {
+                            data[i] = 0; data[i + 1] = 0; data[i + 2] = avg * 3;
+                        } else if (avg < 170) {
+                            data[i] = (avg - 85) * 3; data[i + 1] = 0; data[i + 2] = 255 - (avg - 85) * 3;
+                        } else {
+                            data[i] = 255; data[i + 1] = (avg - 170) * 3; data[i + 2] = 0;
+                        }
+                    }
+                    return imageData;
+
+                case 'comic':
+                    for (let i = 0; i < data.length; i += 4) {
+                        data[i] = Math.round(data[i] / 64) * 64;
+                        data[i + 1] = Math.round(data[i + 1] / 64) * 64;
+                        data[i + 2] = Math.round(data[i + 2] / 64) * 64;
+                    }
+                    return imageData;
+
+                case 'glitch':
+                    const glitchLines = 15;
+                    for (let g = 0; g < glitchLines; g++) {
+                        const y = Math.floor(Math.random() * height);
+                        const shift = Math.floor(Math.random() * 40 - 20);
+                        for (let x = 0; x < width; x++) {
+                            const srcX = Math.max(0, Math.min(width - 1, x + shift));
+                            const srcIdx = (y * width + srcX) * 4;
+                            const dstIdx = (y * width + x) * 4;
+                            if (Math.random() > 0.5) {
+                                data[dstIdx] = data[srcIdx];
+                                data[dstIdx + 1] = data[srcIdx + 1];
+                                data[dstIdx + 2] = data[srcIdx + 2];
+                            }
+                        }
+                    }
+                    return imageData;
+
+                case 'vintage':
+                    for (let i = 0; i < data.length; i += 4) {
+                        const r = data[i], g = data[i + 1], b = data[i + 2];
+                        data[i] = Math.min(255, r * 0.9 + 40);
+                        data[i + 1] = Math.min(255, g * 0.7 + 20);
+                        data[i + 2] = Math.min(255, b * 0.5);
+                    }
+                    return imageData;
+
+                case 'invert':
+                    for (let i = 0; i < data.length; i += 4) {
+                        data[i] = 255 - data[i];
+                        data[i + 1] = 255 - data[i + 1];
+                        data[i + 2] = 255 - data[i + 2];
+                    }
+                    return imageData;
+
+                case 'emboss':
+                    const embossCopy = new Uint8ClampedArray(data);
+                    for (let y = 1; y < height - 1; y++) {
+                        for (let x = 1; x < width - 1; x++) {
+                            const idx = (y * width + x) * 4;
+                            const idxPrev = ((y - 1) * width + (x - 1)) * 4;
+                            for (let c = 0; c < 3; c++) {
+                                data[idx + c] = Math.min(255, Math.max(0, 128 + embossCopy[idx + c] - embossCopy[idxPrev + c]));
+                            }
+                        }
+                    }
+                    return imageData;
+
+                case 'posterize':
+                    const levels = 4;
+                    for (let i = 0; i < data.length; i += 4) {
+                        data[i] = Math.floor(data[i] / (256 / levels)) * (256 / levels);
+                        data[i + 1] = Math.floor(data[i + 1] / (256 / levels)) * (256 / levels);
+                        data[i + 2] = Math.floor(data[i + 2] / (256 / levels)) * (256 / levels);
+                    }
+                    return imageData;
+
+                default:
+                    return imageData;
+            }
+        }
+
+        function applyDistortion(imageData, transform) {
+            const srcData = new Uint8ClampedArray(imageData.data);
+            const dstData = imageData.data;
+            const width = imageData.width;
+            const height = imageData.height;
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const [srcX, srcY] = transform(x, y);
+                    const sx = Math.max(0, Math.min(width - 1, Math.floor(srcX)));
+                    const sy = Math.max(0, Math.min(height - 1, Math.floor(srcY)));
+                    const srcIdx = (sy * width + sx) * 4;
+                    const dstIdx = (y * width + x) * 4;
+                    dstData[dstIdx] = srcData[srcIdx];
+                    dstData[dstIdx + 1] = srcData[srcIdx + 1];
+                    dstData[dstIdx + 2] = srcData[srcIdx + 2];
+                    dstData[dstIdx + 3] = srcData[srcIdx + 3];
+                }
+            }
+            return imageData;
+        }
+
+        // Render loop
+        function renderLoop() {
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                // Draw mirrored video
+                ctx.save();
+                ctx.scale(-1, 1);
+                ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+                ctx.restore();
+
+                if (currentEffect !== 'none') {
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const processed = applyEffect(imageData);
+                    ctx.putImageData(processed, 0, 0);
+                }
+            }
+            animationId = requestAnimationFrame(renderLoop);
+        }
+
+        // Capture photo
+        captureBtn.addEventListener('click', () => {
+            flash.classList.add('active');
+            setTimeout(() => flash.classList.remove('active'), 300);
+
+            const photoCanvas = document.createElement('canvas');
+            photoCanvas.width = canvas.width;
+            photoCanvas.height = canvas.height;
+            const photoCtx = photoCanvas.getContext('2d');
+            photoCtx.drawImage(canvas, 0, 0);
+
+            const dataUrl = photoCanvas.toDataURL('image/png');
+            photos.unshift({ id: Date.now(), data: dataUrl });
+            updatePhotoCount();
+            showToast('Photo captured! 📸');
+        });
+
+        // Gallery functions
+        function updatePhotoCount() {
+            photoCount.textContent = `(${photos.length})`;
+        }
+
+        function renderGallery() {
+            if (photos.length === 0) {
+                emptyGallery.style.display = 'block';
+                galleryGrid.innerHTML = '';
+                return;
+            }
+
+            emptyGallery.style.display = 'none';
+            galleryGrid.innerHTML = photos.map(photo => `
+                <div class="gallery-item" data-id="${photo.id}">
+                    <img src="${photo.data}" alt="Photo">
+                    <button class="delete-btn" data-action="delete"><i class="fas fa-trash"></i></button>
+                    <a href="${photo.data}" download="funhouse-${photo.id}.png" class="save-btn"><i class="fas fa-download"></i></a>
+                </div>
+            `).join('');
+        }
+
+        galleryBtn.addEventListener('click', () => {
+            renderGallery();
+            galleryModal.classList.add('open');
+        });
+
+        document.getElementById('closeGallery').addEventListener('click', () => {
+            galleryModal.classList.remove('open');
+        });
+
+        galleryGrid.addEventListener('click', (e) => {
+            const item = e.target.closest('.gallery-item');
+            if (!item) return;
+
+            if (e.target.closest('.delete-btn')) {
+                const id = parseInt(item.dataset.id);
+                photos = photos.filter(p => p.id !== id);
+                updatePhotoCount();
+                renderGallery();
+                showToast('Photo deleted');
+                return;
+            }
+
+            if (e.target.closest('.save-btn')) {
+                showToast('Downloading photo...');
+                return;
+            }
+
+            const img = item.querySelector('img');
+            lightboxImg.src = img.src;
+            lightbox.classList.add('open');
+        });
+
+        document.getElementById('closeLightbox').addEventListener('click', () => {
+            lightbox.classList.remove('open');
+        });
+
+        lightbox.addEventListener('click', (e) => {
+            if (e.target === lightbox) lightbox.classList.remove('open');
+        });
+
+        // Toast
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        // Initialize
+        initEffects();
+        initCamera();
+    </script>
+</body>
+</html>
+
