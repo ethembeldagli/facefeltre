@@ -4,18 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Funhouse Camera</title>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.min.js"></script>
     <style>
         :root {
-            --primary: #ff3366;
-            --secondary: #00d4ff;
+            --primary: #ff2d55;
+            --secondary: #5856d6;
             --accent: #ffcc00;
-            --bg-dark: #1a1a2e;
-            --bg-card: #16213e;
+            --green: #34c759;
+            --bg-dark: #0a0a0f;
+            --bg-card: #1c1c2e;
             --text: #ffffff;
-            --text-dim: #a0a0c0;
+            --text-dim: #8e8e93;
         }
 
         * {
@@ -31,56 +32,45 @@
             color: var(--text);
             min-height: 100vh;
             overflow-x: hidden;
+            background-image:
+                radial-gradient(circle at 20% 80%, rgba(255, 45, 85, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(88, 86, 214, 0.15) 0%, transparent 50%);
         }
 
         .app-container {
             display: flex;
             flex-direction: column;
             min-height: 100vh;
-            max-width: 100%;
         }
 
         header {
-            padding: 12px 20px;
-            background: linear-gradient(135deg, var(--primary), #ff6b35);
+            padding: 15px 20px;
             text-align: center;
             position: relative;
-            overflow: hidden;
-        }
-
-        header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
-            animation: shimmer 3s infinite;
-        }
-
-        @keyframes shimmer {
-            0%, 100% { transform: translate(-10%, -10%); }
-            50% { transform: translate(10%, 10%); }
         }
 
         h1 {
-            font-family: 'Fredoka One', cursive;
-            font-size: 1.8rem;
-            text-shadow: 3px 3px 0 rgba(0,0,0,0.2);
-            position: relative;
+            font-family: 'Bangers', cursive;
+            font-size: 2.2rem;
+            letter-spacing: 3px;
+            background: linear-gradient(135deg, var(--primary), var(--accent), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: none;
             display: inline-flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
 
         h1 i {
-            animation: bounce 1s ease-in-out infinite;
+            -webkit-text-fill-color: var(--primary);
+            animation: wiggle 0.5s ease-in-out infinite;
         }
 
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0) rotate(-10deg); }
-            50% { transform: translateY(-5px) rotate(10deg); }
+        @keyframes wiggle {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
         }
 
         .camera-section {
@@ -88,23 +78,35 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 15px;
-            gap: 15px;
+            padding: 10px 15px;
+            gap: 12px;
         }
 
         .camera-container {
             position: relative;
             width: 100%;
-            max-width: 640px;
-            aspect-ratio: 4/3;
+            max-width: 500px;
+            aspect-ratio: 3/4;
             background: #000;
-            border-radius: 20px;
+            border-radius: 24px;
             overflow: hidden;
-            box-shadow: 0 10px 40px rgba(255, 51, 102, 0.3),
-                        inset 0 0 0 4px rgba(255,255,255,0.1);
+            box-shadow:
+                0 0 0 3px rgba(255,255,255,0.1),
+                0 20px 60px rgba(0,0,0,0.5),
+                0 0 100px rgba(255, 45, 85, 0.2);
         }
 
-        #video, #canvas {
+        #video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+
+        #canvas {
             position: absolute;
             top: 0;
             left: 0;
@@ -113,86 +115,90 @@
             object-fit: cover;
         }
 
-        #video {
-            transform: scaleX(-1);
-        }
-
-        #canvas {
-            pointer-events: none;
-        }
-
-        .effect-cursor {
+        .overlay-ui {
             position: absolute;
-            width: 100px;
-            height: 100px;
-            border: 3px dashed var(--accent);
-            border-radius: 50%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             pointer-events: none;
-            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+
+        .intensity-display {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.9rem;
             opacity: 0;
             transition: opacity 0.3s;
-            box-shadow: 0 0 20px rgba(255, 204, 0, 0.5);
         }
 
-        .effect-cursor.visible {
+        .intensity-display.visible {
             opacity: 1;
-            animation: pulse-ring 1.5s infinite;
         }
 
-        @keyframes pulse-ring {
-            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
-            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.5; }
-        }
-
-        .face-indicator {
+        .face-status {
             position: absolute;
-            top: 10px;
-            left: 10px;
+            top: 12px;
+            left: 12px;
             background: rgba(0,0,0,0.6);
-            padding: 6px 12px;
+            backdrop-filter: blur(10px);
+            padding: 6px 14px;
             border-radius: 20px;
             font-size: 0.75rem;
+            font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             opacity: 0;
             transition: opacity 0.3s;
         }
 
-        .face-indicator.visible {
+        .face-status.visible {
             opacity: 1;
         }
 
-        .face-indicator .dot {
+        .face-status .dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #ff4444;
+            background: var(--primary);
+            transition: background 0.3s;
         }
 
-        .face-indicator.detected .dot {
-            background: #44ff44;
-            animation: pulse-dot 1s infinite;
+        .face-status.detected .dot {
+            background: var(--green);
+            box-shadow: 0 0 10px var(--green);
         }
 
-        @keyframes pulse-dot {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.3); }
-        }
-
-        .no-camera {
+        .gesture-hint {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            padding: 15px 25px;
+            border-radius: 15px;
             text-align: center;
-            color: var(--text-dim);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
         }
 
-        .no-camera i {
-            font-size: 4rem;
-            margin-bottom: 15px;
-            opacity: 0.5;
+        .gesture-hint.visible {
+            opacity: 1;
+        }
+
+        .gesture-hint i {
+            font-size: 2rem;
+            margin-bottom: 8px;
+            display: block;
         }
 
         .loading-overlay {
@@ -201,224 +207,218 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.9);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            gap: 15px;
-            z-index: 10;
+            gap: 20px;
+            z-index: 100;
+            transition: opacity 0.5s;
         }
 
         .loading-overlay.hidden {
-            display: none;
+            opacity: 0;
+            pointer-events: none;
         }
 
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(255,255,255,0.2);
-            border-top-color: var(--accent);
+        .loader {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top-color: var(--primary);
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            animation: spin 0.8s linear infinite;
         }
 
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
 
+        .loading-text {
+            font-weight: 700;
+            color: var(--text-dim);
+        }
+
         .controls {
             display: flex;
-            gap: 15px;
+            gap: 12px;
             justify-content: center;
-            flex-wrap: wrap;
             align-items: center;
+            flex-wrap: wrap;
+            padding: 5px;
         }
 
         .btn {
             font-family: 'Nunito', sans-serif;
-            font-weight: 700;
-            font-size: 16px;
-            padding: 12px 24px;
+            font-weight: 900;
+            font-size: 15px;
+            padding: 14px 24px;
             border: none;
             border-radius: 50px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
             display: flex;
             align-items: center;
             gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .btn-capture {
-            background: linear-gradient(135deg, var(--primary), #ff6b35);
+            background: linear-gradient(135deg, var(--primary), #ff6b8a);
             color: white;
-            box-shadow: 0 4px 20px rgba(255, 51, 102, 0.4);
-        }
-
-        .btn-capture:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 30px rgba(255, 51, 102, 0.6);
+            box-shadow: 0 4px 25px rgba(255, 45, 85, 0.5);
+            min-width: 130px;
+            justify-content: center;
         }
 
         .btn-capture:active {
-            transform: scale(0.95);
+            transform: scale(0.92);
         }
 
         .btn-gallery {
-            background: linear-gradient(135deg, var(--secondary), #0099cc);
+            background: rgba(255,255,255,0.1);
             color: white;
-            box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
+            backdrop-filter: blur(10px);
         }
 
-        .btn-gallery:hover {
-            transform: scale(1.05);
+        .btn-gallery:active {
+            background: rgba(255,255,255,0.2);
         }
 
-        /* Face Lock Toggle */
-        .face-lock-toggle {
+        .toggle-btn {
             display: flex;
             align-items: center;
-            gap: 8px;
-            background: rgba(255,255,255,0.1);
-            padding: 8px 16px;
+            gap: 10px;
+            background: rgba(255,255,255,0.08);
+            padding: 10px 18px;
             border-radius: 50px;
             cursor: pointer;
             transition: all 0.3s;
-            user-select: none;
+            border: 2px solid transparent;
         }
 
-        .face-lock-toggle:hover {
-            background: rgba(255,255,255,0.15);
+        .toggle-btn.active {
+            background: rgba(88, 86, 214, 0.3);
+            border-color: var(--secondary);
+            box-shadow: 0 0 20px rgba(88, 86, 214, 0.3);
         }
 
-        .face-lock-toggle.active {
-            background: linear-gradient(135deg, #9b59b6, #8e44ad);
-            box-shadow: 0 4px 15px rgba(155, 89, 182, 0.4);
+        .toggle-btn .icon {
+            font-size: 1.2rem;
         }
 
-        .toggle-switch {
-            width: 40px;
-            height: 22px;
+        .toggle-btn .label {
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        .toggle-indicator {
+            width: 44px;
+            height: 24px;
             background: rgba(255,255,255,0.2);
-            border-radius: 11px;
+            border-radius: 12px;
             position: relative;
             transition: all 0.3s;
         }
 
-        .face-lock-toggle.active .toggle-switch {
-            background: rgba(255,255,255,0.3);
+        .toggle-btn.active .toggle-indicator {
+            background: var(--secondary);
         }
 
-        .toggle-switch::after {
+        .toggle-indicator::after {
             content: '';
             position: absolute;
-            width: 18px;
-            height: 18px;
+            width: 20px;
+            height: 20px;
             background: white;
             border-radius: 50%;
             top: 2px;
             left: 2px;
             transition: all 0.3s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
 
-        .face-lock-toggle.active .toggle-switch::after {
-            left: 20px;
-        }
-
-        .toggle-label {
-            font-size: 0.85rem;
-            font-weight: 700;
+        .toggle-btn.active .toggle-indicator::after {
+            left: 22px;
         }
 
         .effects-section {
             padding: 15px;
-            background: var(--bg-card);
-            border-radius: 20px 20px 0 0;
+            background: linear-gradient(180deg, var(--bg-card), var(--bg-dark));
+            border-radius: 24px 24px 0 0;
+            margin-top: auto;
         }
 
-        .effects-tabs {
+        .tabs {
             display: flex;
-            gap: 10px;
-            margin-bottom: 12px;
-            border-bottom: 2px solid rgba(255,255,255,0.1);
-            padding-bottom: 10px;
+            gap: 8px;
+            margin-bottom: 15px;
+            overflow-x: auto;
+            padding-bottom: 5px;
         }
 
-        .tab-btn {
-            background: none;
+        .tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab {
+            background: rgba(255,255,255,0.05);
             border: none;
             color: var(--text-dim);
-            font-family: 'Fredoka One', cursive;
-            font-size: 0.95rem;
-            padding: 8px 16px;
-            cursor: pointer;
-            border-radius: 20px;
-            transition: all 0.3s;
-        }
-
-        .tab-btn:hover {
-            color: white;
-            background: rgba(255,255,255,0.1);
-        }
-
-        .tab-btn.active {
-            color: var(--accent);
-            background: rgba(255, 204, 0, 0.15);
-        }
-
-        .effects-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            padding: 0 5px;
-        }
-
-        .effects-title {
-            font-family: 'Fredoka One', cursive;
-            font-size: 1.1rem;
-            color: var(--accent);
-        }
-
-        .effect-info {
+            font-family: 'Nunito', sans-serif;
+            font-weight: 700;
             font-size: 0.85rem;
-            color: var(--text-dim);
+            padding: 10px 18px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tab:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
         }
 
         .effects-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
             gap: 10px;
-            max-height: 200px;
+            max-height: 180px;
             overflow-y: auto;
             padding: 5px;
         }
 
         .effects-grid::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .effects-grid::-webkit-scrollbar-track {
-            background: rgba(255,255,255,0.1);
-            border-radius: 3px;
+            width: 4px;
         }
 
         .effects-grid::-webkit-scrollbar-thumb {
             background: var(--primary);
-            border-radius: 3px;
+            border-radius: 2px;
         }
 
         .effect-btn {
             background: rgba(255,255,255,0.05);
             border: 2px solid transparent;
-            border-radius: 12px;
-            padding: 10px 8px;
+            border-radius: 16px;
+            padding: 12px 8px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
             color: white;
         }
 
@@ -430,21 +430,19 @@
         .effect-btn.active {
             border-color: var(--accent);
             background: rgba(255, 204, 0, 0.15);
-            box-shadow: 0 0 15px rgba(255, 204, 0, 0.3);
+            box-shadow: 0 0 20px rgba(255, 204, 0, 0.2);
         }
 
-        .effect-btn i {
-            font-size: 1.3rem;
+        .effect-btn .icon {
+            font-size: 1.8rem;
         }
 
-        .effect-btn span {
-            font-size: 0.7rem;
-            text-align: center;
-            line-height: 1.2;
-        }
-
-        .effect-btn .emoji {
-            font-size: 1.5rem;
+        .effect-btn .name {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.8;
         }
 
         .tab-content {
@@ -455,7 +453,6 @@
             display: block;
         }
 
-        /* Flash effect */
         .flash {
             position: fixed;
             top: 0;
@@ -469,15 +466,15 @@
         }
 
         .flash.active {
-            animation: flash 0.3s ease-out;
+            animation: flash-anim 0.25s ease-out;
         }
 
-        @keyframes flash {
-            0% { opacity: 0.9; }
+        @keyframes flash-anim {
+            0% { opacity: 1; }
             100% { opacity: 0; }
         }
 
-        /* Gallery Modal */
+        /* Modal */
         .modal {
             display: none;
             position: fixed;
@@ -492,12 +489,6 @@
 
         .modal.open {
             display: block;
-            animation: fadeIn 0.3s;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
         }
 
         .modal-header {
@@ -509,47 +500,39 @@
             justify-content: space-between;
             align-items: center;
             z-index: 10;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
         .modal-title {
-            font-family: 'Fredoka One', cursive;
-            font-size: 1.4rem;
+            font-family: 'Bangers', cursive;
+            font-size: 1.5rem;
+            letter-spacing: 2px;
         }
 
-        .btn-close {
+        .close-btn {
             background: rgba(255,255,255,0.1);
             border: none;
             color: white;
-            font-size: 1.5rem;
             width: 40px;
             height: 40px;
             border-radius: 50%;
+            font-size: 1.2rem;
             cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .btn-close:hover {
-            background: var(--primary);
         }
 
         .gallery-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
             padding: 15px;
         }
 
         .gallery-item {
             position: relative;
-            aspect-ratio: 4/3;
+            aspect-ratio: 3/4;
             border-radius: 12px;
             overflow: hidden;
             cursor: pointer;
-            transition: transform 0.3s;
-        }
-
-        .gallery-item:hover {
-            transform: scale(1.02);
         }
 
         .gallery-item img {
@@ -558,61 +541,54 @@
             object-fit: cover;
         }
 
-        .gallery-item .delete-btn {
+        .gallery-item .actions {
             position: absolute;
-            top: 5px;
-            right: 5px;
-            background: rgba(255, 51, 102, 0.9);
-            border: none;
-            color: white;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            cursor: pointer;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 8px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
             opacity: 0;
             transition: opacity 0.3s;
         }
 
-        .gallery-item:hover .delete-btn {
+        .gallery-item:hover .actions {
             opacity: 1;
         }
 
-        .gallery-item .save-btn {
-            position: absolute;
-            bottom: 5px;
-            right: 5px;
-            background: rgba(0, 212, 255, 0.9);
+        .gallery-item .action-btn {
+            background: rgba(255,255,255,0.2);
             border: none;
             color: white;
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             cursor: pointer;
-            opacity: 0;
-            transition: opacity 0.3s;
-            text-decoration: none;
             display: flex;
             align-items: center;
             justify-content: center;
+            text-decoration: none;
         }
 
-        .gallery-item:hover .save-btn {
-            opacity: 1;
+        .gallery-item .action-btn.delete {
+            background: var(--primary);
         }
 
-        .empty-gallery {
+        .empty-state {
             text-align: center;
             padding: 60px 20px;
             color: var(--text-dim);
         }
 
-        .empty-gallery i {
+        .empty-state i {
             font-size: 4rem;
             margin-bottom: 15px;
             opacity: 0.3;
         }
 
-        /* Lightbox */
         .lightbox {
             display: none;
             position: fixed;
@@ -633,34 +609,29 @@
         .lightbox img {
             max-width: 95%;
             max-height: 90%;
-            border-radius: 10px;
+            border-radius: 12px;
         }
 
-        .lightbox-close {
+        .lightbox .close-btn {
             position: absolute;
             top: 15px;
             right: 15px;
-            background: none;
-            border: none;
-            color: white;
-            font-size: 2rem;
-            cursor: pointer;
         }
 
-        /* Toast */
         .toast {
             position: fixed;
             bottom: 100px;
             left: 50%;
-            transform: translateX(-50%) translateY(100px);
+            transform: translateX(-50%) translateY(50px);
             background: var(--bg-card);
             color: white;
-            padding: 12px 24px;
+            padding: 12px 28px;
             border-radius: 50px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
             opacity: 0;
             transition: all 0.3s;
             z-index: 4000;
+            font-weight: 700;
         }
 
         .toast.show {
@@ -668,88 +639,100 @@
             opacity: 1;
         }
 
-        @media (max-width: 480px) {
-            h1 { font-size: 1.4rem; }
-            .effects-grid { grid-template-columns: repeat(4, 1fr); }
-            .effect-btn { padding: 8px 5px; }
-            .effect-btn i { font-size: 1.1rem; }
-            .effect-btn span { font-size: 0.6rem; }
-            .controls { gap: 8px; }
-            .btn { padding: 10px 16px; font-size: 14px; }
-            .face-lock-toggle { padding: 6px 12px; }
-            .toggle-label { font-size: 0.75rem; }
+        .no-camera {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: var(--text-dim);
         }
 
-        .dark body { background: var(--bg-dark); }
+        .no-camera i {
+            font-size: 4rem;
+            margin-bottom: 15px;
+            opacity: 0.4;
+        }
+
+        @media (max-width: 400px) {
+            h1 { font-size: 1.8rem; }
+            .camera-container { aspect-ratio: 3/4; border-radius: 20px; }
+            .effects-grid { grid-template-columns: repeat(4, 1fr); }
+            .effect-btn { padding: 10px 5px; }
+            .effect-btn .icon { font-size: 1.5rem; }
+            .btn { padding: 12px 18px; font-size: 13px; }
+        }
     </style>
 </head>
 <body>
     <div class="app-container">
         <header>
-            <h1><i class="fas fa-camera-retro"></i> Funhouse Camera</h1>
+            <h1><i class="fas fa-laugh-squint"></i> FUNHOUSE</h1>
         </header>
 
         <section class="camera-section">
             <div class="camera-container" id="cameraContainer">
                 <video id="video" autoplay playsinline muted></video>
                 <canvas id="canvas"></canvas>
-                <div class="effect-cursor" id="effectCursor"></div>
-                <div class="face-indicator" id="faceIndicator">
-                    <span class="dot"></span>
-                    <span class="status">No face</span>
+
+                <div class="overlay-ui">
+                    <div class="face-status" id="faceStatus">
+                        <span class="dot"></span>
+                        <span id="faceStatusText">Looking...</span>
+                    </div>
+                    <div class="intensity-display" id="intensityDisplay">
+                        Intensity: <span id="intensityValue">100%</span>
+                    </div>
+                    <div class="gesture-hint" id="gestureHint">
+                        <i class="fas fa-hand-pointer"></i>
+                        <div>Pinch to zoom effect</div>
+                    </div>
                 </div>
+
                 <div class="loading-overlay" id="loadingOverlay">
-                    <div class="spinner"></div>
-                    <p>Loading face detection...</p>
+                    <div class="loader"></div>
+                    <div class="loading-text">Loading face magic...</div>
                 </div>
-                <div class="no-camera" id="noCamera" style="display: none;">
+
+                <div class="no-camera" id="noCamera" style="display:none;">
                     <i class="fas fa-video-slash"></i>
                     <p>Camera not available</p>
-                    <p style="font-size: 0.9rem; margin-top: 10px;">Please allow camera access</p>
+                    <p style="font-size:0.85rem;margin-top:8px;">Please allow camera access</p>
                 </div>
             </div>
 
             <div class="controls">
                 <button class="btn btn-capture" id="captureBtn">
-                    <i class="fas fa-camera"></i> Snap!
+                    <i class="fas fa-camera"></i> Snap
                 </button>
-                <div class="face-lock-toggle" id="faceLockToggle">
-                    <i class="fas fa-crosshairs"></i>
-                    <span class="toggle-label">Lock to Face</span>
-                    <div class="toggle-switch"></div>
+                <div class="toggle-btn" id="faceLockToggle">
+                    <span class="icon">🎯</span>
+                    <span class="label">Face Lock</span>
+                    <div class="toggle-indicator"></div>
                 </div>
                 <button class="btn btn-gallery" id="galleryBtn">
-                    <i class="fas fa-images"></i> <span id="photoCount">(0)</span>
+                    <i class="fas fa-images"></i> <span id="photoCount">0</span>
                 </button>
             </div>
         </section>
 
         <section class="effects-section">
-            <div class="effects-tabs">
-                <button class="tab-btn active" data-tab="distortion"><i class="fas fa-magic"></i> Distortion</button>
-                <button class="tab-btn" data-tab="filters"><i class="fas fa-palette"></i> Filters</button>
-                <button class="tab-btn" data-tab="face"><i class="fas fa-smile"></i> Face</button>
+            <div class="tabs">
+                <button class="tab active" data-tab="funny"><i class="fas fa-laugh-beam"></i> Funny</button>
+                <button class="tab" data-tab="face"><i class="fas fa-grin-stars"></i> Face FX</button>
+                <button class="tab" data-tab="trippy"><i class="fas fa-eye"></i> Trippy</button>
             </div>
 
-            <div class="tab-content active" id="distortion-tab">
-                <div class="effects-header">
-                    <span class="effect-info">Tap camera to move effect center</span>
-                </div>
-                <div class="effects-grid" id="distortionGrid"></div>
-            </div>
-
-            <div class="tab-content" id="filters-tab">
-                <div class="effects-header">
-                    <span class="effect-info">Color & style filters</span>
-                </div>
-                <div class="effects-grid" id="filtersGrid"></div>
+            <div class="tab-content active" id="funny-tab">
+                <div class="effects-grid" id="funnyGrid"></div>
             </div>
 
             <div class="tab-content" id="face-tab">
-                <div class="effects-header">
-                    <span class="effect-info">Enable "Lock to Face" for best results</span>
-                </div>
                 <div class="effects-grid" id="faceGrid"></div>
+            </div>
+
+            <div class="tab-content" id="trippy-tab">
+                <div class="effects-grid" id="trippyGrid"></div>
             </div>
         </section>
     </div>
@@ -758,98 +741,106 @@
 
     <div class="modal" id="galleryModal">
         <div class="modal-header">
-            <span class="modal-title"><i class="fas fa-images"></i> Your Photos</span>
-            <button class="btn-close" id="closeGallery"><i class="fas fa-times"></i></button>
+            <span class="modal-title">📸 Gallery</span>
+            <button class="close-btn" id="closeGallery"><i class="fas fa-times"></i></button>
         </div>
         <div class="gallery-grid" id="galleryGrid"></div>
-        <div class="empty-gallery" id="emptyGallery">
-            <i class="fas fa-camera"></i>
+        <div class="empty-state" id="emptyGallery">
+            <i class="fas fa-camera-retro"></i>
             <p>No photos yet!</p>
-            <p style="font-size: 0.9rem;">Start snapping some fun pics</p>
+            <p style="font-size:0.85rem;margin-top:8px;">Start snapping some fun pics</p>
         </div>
     </div>
 
     <div class="lightbox" id="lightbox">
-        <button class="lightbox-close" id="closeLightbox"><i class="fas fa-times"></i></button>
+        <button class="close-btn" id="closeLightbox"><i class="fas fa-times"></i></button>
         <img id="lightboxImg" src="" alt="Photo">
     </div>
 
-    <div class="toast" id="toast">Photo saved!</div>
+    <div class="toast" id="toast"></div>
 
     <script>
-        // Dark mode detection
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // Dark mode
+        if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
             document.documentElement.classList.add('dark');
         }
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
-            document.documentElement.classList.toggle('dark', event.matches);
-        });
 
-        // Effects configuration
-        const distortionEffects = [
-            { id: 'none', name: 'Normal', icon: 'fa-circle', movable: false },
-            { id: 'stretch', name: 'Stretch', icon: 'fa-arrows-alt-h', movable: true },
-            { id: 'squeeze', name: 'Squeeze', icon: 'fa-compress-alt', movable: true },
-            { id: 'twirl', name: 'Twirl', icon: 'fa-sync-alt', movable: true },
-            { id: 'bulge', name: 'Bulge', icon: 'fa-expand', movable: true },
-            { id: 'pinch', name: 'Pinch', icon: 'fa-compress', movable: true },
-            { id: 'fisheye', name: 'Fish Eye', icon: 'fa-fish', movable: true },
-            { id: 'mirror-h', name: 'Mirror H', icon: 'fa-arrows-alt-h', movable: false },
-            { id: 'mirror-v', name: 'Mirror V', icon: 'fa-arrows-alt-v', movable: false },
-            { id: 'kaleidoscope', name: 'Kaleidoscope', icon: 'fa-snowflake', movable: false },
-            { id: 'wave', name: 'Wave', icon: 'fa-water', movable: false }
+        // === EFFECTS CONFIG ===
+        const funnyEffects = [
+            { id: 'none', name: 'Normal', icon: '😐' },
+            { id: 'bighead', name: 'Big Head', icon: '🎈' },
+            { id: 'tinyhead', name: 'Tiny Head', icon: '🤏' },
+            { id: 'stretch-h', name: 'Stretch', icon: '↔️' },
+            { id: 'squish', name: 'Squish', icon: '↕️' },
+            { id: 'bulge', name: 'Bulge', icon: '🔮' },
+            { id: 'twirl', name: 'Twirl', icon: '🌀' },
+            { id: 'wobble', name: 'Wobble', icon: '〰️' },
+            { id: 'funhouse', name: 'Funhouse', icon: '🎪' },
+            { id: 'drunk', name: 'Drunk', icon: '🥴' },
+            { id: 'squeeze', name: 'Squeeze', icon: '🫠' },
+            { id: 'implode', name: 'Implode', icon: '💥' }
         ];
 
-        const filterEffects = [
-            { id: 'pixelate', name: 'Pixelate', icon: 'fa-th' },
-            { id: 'rgbsplit', name: 'RGB Split', icon: 'fa-palette' },
-            { id: 'thermal', name: 'Thermal', icon: 'fa-temperature-high' },
-            { id: 'comic', name: 'Pop Art', icon: 'fa-mask' },
-            { id: 'glitch', name: 'Glitch', icon: 'fa-bolt' },
-            { id: 'vintage', name: 'Vintage', icon: 'fa-film' },
-            { id: 'invert', name: 'Negative', icon: 'fa-adjust' },
-            { id: 'emboss', name: 'Emboss', icon: 'fa-stamp' },
-            { id: 'posterize', name: 'Posterize', icon: 'fa-layer-group' }
+        const faceEffects = [
+            { id: 'face-none', name: 'None', icon: '😶' },
+            { id: 'googly', name: 'Googly', icon: '👀' },
+            { id: 'bigmouth', name: 'Big Mouth', icon: '👄' },
+            { id: 'bignose', name: 'Big Nose', icon: '👃' },
+            { id: 'vampire', name: 'Vampire', icon: '🧛' },
+            { id: 'cyclops', name: 'Cyclops', icon: '👁️' },
+            { id: 'cartoon', name: 'Cartoon', icon: '🎨' },
+            { id: 'zombie', name: 'Zombie', icon: '🧟' },
+            { id: 'oldage', name: 'Old Age', icon: '👴' },
+            { id: 'beauty', name: 'Beauty', icon: '✨' },
+            { id: 'demon', name: 'Demon', icon: '👹' },
+            { id: 'alien', name: 'Alien', icon: '👽' }
         ];
 
-        const faceFilters = [
-            { id: 'face-none', name: 'None', emoji: '😐' },
-            { id: 'sunglasses', name: 'Sunglasses', emoji: '😎' },
-            { id: 'hearts', name: 'Heart Eyes', emoji: '😍' },
-            { id: 'stars', name: 'Star Eyes', emoji: '🤩' },
-            { id: 'cat', name: 'Cat', emoji: '😺' },
-            { id: 'dog', name: 'Dog', emoji: '🐶' },
-            { id: 'crown', name: 'Crown', emoji: '👑' },
-            { id: 'devil', name: 'Devil', emoji: '😈' },
-            { id: 'angel', name: 'Angel', emoji: '😇' },
-            { id: 'clown', name: 'Clown', emoji: '🤡' },
-            { id: 'mustache', name: 'Mustache', emoji: '🥸' },
-            { id: 'nerd', name: 'Nerd', emoji: '🤓' },
-            { id: 'alien', name: 'Alien', emoji: '👽' },
-            { id: 'robot', name: 'Robot', emoji: '🤖' },
-            { id: 'pirate', name: 'Pirate', emoji: '🏴‍☠️' }
+        const trippyEffects = [
+            { id: 'none', name: 'Normal', icon: '😐' },
+            { id: 'kaleidoscope', name: 'Kaleid', icon: '❄️' },
+            { id: 'mirror4', name: '4 Mirror', icon: '🪞' },
+            { id: 'tunnel', name: 'Tunnel', icon: '🕳️' },
+            { id: 'fractal', name: 'Fractal', icon: '🔷' },
+            { id: 'pixelate', name: 'Pixel', icon: '🟩' },
+            { id: 'thermal', name: 'Thermal', icon: '🌡️' },
+            { id: 'neon', name: 'Neon', icon: '💜' },
+            { id: 'posterize', name: 'Poster', icon: '🎭' },
+            { id: 'invert', name: 'Negative', icon: '🔄' },
+            { id: 'emboss', name: 'Emboss', icon: '🗿' },
+            { id: 'cartoon-filter', name: 'Toon', icon: '📺' }
         ];
 
-        // App state
+        // === APP STATE ===
         let currentEffect = 'none';
-        let currentFaceFilter = 'face-none';
+        let currentFaceEffect = 'face-none';
+        let currentTab = 'funny';
+        let effectIntensity = 1.0;
+        let twirlAngle = 0;
         let effectX = 0.5;
         let effectY = 0.5;
         let photos = [];
-        let animationId = null;
         let faceLockEnabled = false;
-        let faceDetected = false;
         let faceData = null;
         let modelsLoaded = false;
+        let animationId = null;
 
-        // DOM elements
+        // Touch gesture state
+        let initialPinchDistance = 0;
+        let initialTwirlAngle = 0;
+        let isGesturing = false;
+
+        // DOM Elements
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         const cameraContainer = document.getElementById('cameraContainer');
-        const effectCursor = document.getElementById('effectCursor');
-        const faceIndicator = document.getElementById('faceIndicator');
         const loadingOverlay = document.getElementById('loadingOverlay');
+        const faceStatus = document.getElementById('faceStatus');
+        const faceStatusText = document.getElementById('faceStatusText');
+        const intensityDisplay = document.getElementById('intensityDisplay');
+        const intensityValue = document.getElementById('intensityValue');
+        const gestureHint = document.getElementById('gestureHint');
         const noCamera = document.getElementById('noCamera');
         const captureBtn = document.getElementById('captureBtn');
         const galleryBtn = document.getElementById('galleryBtn');
@@ -863,90 +854,123 @@
         const toast = document.getElementById('toast');
         const photoCount = document.getElementById('photoCount');
 
-        // Initialize effects grids
-        function initEffects() {
-            document.getElementById('distortionGrid').innerHTML = distortionEffects.map(effect => `
-                <button class="effect-btn ${effect.id === 'none' ? 'active' : ''}"
-                        data-effect="${effect.id}" data-type="distortion"
-                        data-movable="${effect.movable}">
-                    <i class="fas ${effect.icon}"></i>
-                    <span>${effect.name}</span>
+        // === INIT ===
+        function initEffectsUI() {
+            document.getElementById('funnyGrid').innerHTML = funnyEffects.map(e => `
+                <button class="effect-btn ${e.id === 'none' ? 'active' : ''}" data-effect="${e.id}" data-tab="funny">
+                    <span class="icon">${e.icon}</span>
+                    <span class="name">${e.name}</span>
                 </button>
             `).join('');
 
-            document.getElementById('filtersGrid').innerHTML = filterEffects.map(effect => `
-                <button class="effect-btn" data-effect="${effect.id}" data-type="filter">
-                    <i class="fas ${effect.icon}"></i>
-                    <span>${effect.name}</span>
+            document.getElementById('faceGrid').innerHTML = faceEffects.map(e => `
+                <button class="effect-btn ${e.id === 'face-none' ? 'active' : ''}" data-effect="${e.id}" data-tab="face">
+                    <span class="icon">${e.icon}</span>
+                    <span class="name">${e.name}</span>
                 </button>
             `).join('');
 
-            document.getElementById('faceGrid').innerHTML = faceFilters.map(filter => `
-                <button class="effect-btn ${filter.id === 'face-none' ? 'active' : ''}"
-                        data-effect="${filter.id}" data-type="face">
-                    <span class="emoji">${filter.emoji}</span>
-                    <span>${filter.name}</span>
+            document.getElementById('trippyGrid').innerHTML = trippyEffects.map(e => `
+                <button class="effect-btn ${e.id === 'none' ? 'active' : ''}" data-effect="${e.id}" data-tab="trippy">
+                    <span class="icon">${e.icon}</span>
+                    <span class="name">${e.name}</span>
                 </button>
             `).join('');
 
-            // Effect selection handlers
+            // Effect selection
             document.querySelectorAll('.effects-grid').forEach(grid => {
-                grid.addEventListener('click', (e) => {
+                grid.addEventListener('click', e => {
                     const btn = e.target.closest('.effect-btn');
                     if (!btn) return;
 
-                    const type = btn.dataset.type;
+                    const tab = btn.dataset.tab;
                     const effectId = btn.dataset.effect;
 
-                    if (type === 'face') {
+                    if (tab === 'face') {
                         document.querySelectorAll('#faceGrid .effect-btn').forEach(b => b.classList.remove('active'));
                         btn.classList.add('active');
-                        currentFaceFilter = effectId;
+                        currentFaceEffect = effectId;
                     } else {
-                        document.querySelectorAll('#distortionGrid .effect-btn, #filtersGrid .effect-btn').forEach(b => b.classList.remove('active'));
+                        document.querySelectorAll('#funnyGrid .effect-btn, #trippyGrid .effect-btn').forEach(b => b.classList.remove('active'));
                         btn.classList.add('active');
                         currentEffect = effectId;
+                        effectIntensity = 1.0; // Reset intensity
+                        twirlAngle = 0;
+                    }
 
-                        const isMovable = btn.dataset.movable === 'true';
-                        effectCursor.classList.toggle('visible', isMovable && !faceLockEnabled);
+                    // Show gesture hint for applicable effects
+                    if (['bulge', 'twirl', 'bighead', 'tinyhead', 'squeeze', 'implode'].includes(effectId)) {
+                        gestureHint.classList.add('visible');
+                        setTimeout(() => gestureHint.classList.remove('visible'), 2000);
                     }
                 });
             });
 
             // Tab switching
-            document.querySelectorAll('.tab-btn').forEach(tab => {
+            document.querySelectorAll('.tab').forEach(tab => {
                 tab.addEventListener('click', () => {
-                    document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
                     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                     tab.classList.add('active');
                     document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
+                    currentTab = tab.dataset.tab;
                 });
             });
         }
 
-        // Load face-api models
+        // === FACE DETECTION ===
         async function loadFaceModels() {
             const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model';
             try {
                 await Promise.all([
                     faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL)
+                    faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODEL_URL)
                 ]);
                 modelsLoaded = true;
                 loadingOverlay.classList.add('hidden');
-                console.log('Face detection models loaded');
             } catch (err) {
-                console.log('Error loading face models:', JSON.stringify(err));
-                loadingOverlay.innerHTML = '<p>Face detection unavailable</p>';
+                console.log('Face model error:', err.message);
+                loadingOverlay.innerHTML = '<p style="color:#ff6b6b;">Face detection failed to load</p>';
                 setTimeout(() => loadingOverlay.classList.add('hidden'), 2000);
             }
         }
 
-        // Camera initialization
+        let lastDetect = 0;
+        async function detectFace() {
+            if (!modelsLoaded || !faceLockEnabled) return;
+
+            const now = Date.now();
+            if (now - lastDetect < 80) return;
+            lastDetect = now;
+
+            try {
+                const detection = await faceapi
+                    .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }))
+                    .withFaceLandmarks(true);
+
+                if (detection) {
+                    faceData = detection;
+                    const box = detection.detection.box;
+                    effectX = 1 - (box.x + box.width / 2) / video.videoWidth;
+                    effectY = (box.y + box.height / 2) / video.videoHeight;
+
+                    faceStatus.classList.add('detected');
+                    faceStatusText.textContent = 'Face locked!';
+                } else {
+                    faceData = null;
+                    faceStatus.classList.remove('detected');
+                    faceStatusText.textContent = 'Looking...';
+                }
+            } catch (e) {
+                // Silent fail
+            }
+        }
+
+        // === CAMERA ===
         async function initCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+                    video: { facingMode: 'user', width: { ideal: 480 }, height: { ideal: 640 } },
                     audio: false
                 });
                 video.srcObject = stream;
@@ -959,800 +983,282 @@
                     renderLoop();
                 };
             } catch (err) {
-                console.log('Camera error:', JSON.stringify(err));
+                console.log('Camera error:', err.message);
                 noCamera.style.display = 'block';
                 loadingOverlay.classList.add('hidden');
             }
         }
 
-        // Face detection
-        let lastFaceDetection = 0;
-        async function detectFace() {
-            if (!modelsLoaded || !faceLockEnabled) return;
-
-            const now = Date.now();
-            if (now - lastFaceDetection < 100) return; // Limit to 10fps for detection
-            lastFaceDetection = now;
-
-            try {
-                const detections = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
-                    .withFaceLandmarks();
-
-                if (detections) {
-                    faceDetected = true;
-                    faceData = detections;
-
-                    // Update effect position to face center
-                    const box = detections.detection.box;
-                    effectX = 1 - (box.x + box.width / 2) / video.videoWidth;
-                    effectY = (box.y + box.height / 2) / video.videoHeight;
-
-                    faceIndicator.classList.add('detected');
-                    faceIndicator.querySelector('.status').textContent = 'Face locked';
-                } else {
-                    faceDetected = false;
-                    faceData = null;
-                    faceIndicator.classList.remove('detected');
-                    faceIndicator.querySelector('.status').textContent = 'No face';
-                }
-            } catch (err) {
-                console.log('Face detection error');
-            }
+        // === GESTURES ===
+        function getDistance(t1, t2) {
+            return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
         }
 
-        // Face lock toggle
+        function getAngle(t1, t2) {
+            return Math.atan2(t2.clientY - t1.clientY, t2.clientX - t1.clientX);
+        }
+
+        cameraContainer.addEventListener('touchstart', e => {
+            if (e.touches.length === 2) {
+                isGesturing = true;
+                initialPinchDistance = getDistance(e.touches[0], e.touches[1]);
+                initialTwirlAngle = getAngle(e.touches[0], e.touches[1]);
+            } else if (e.touches.length === 1 && !faceLockEnabled) {
+                const rect = cameraContainer.getBoundingClientRect();
+                effectX = (e.touches[0].clientX - rect.left) / rect.width;
+                effectY = (e.touches[0].clientY - rect.top) / rect.height;
+            }
+        }, { passive: true });
+
+        cameraContainer.addEventListener('touchmove', e => {
+            if (e.touches.length === 2 && isGesturing) {
+                const currentDistance = getDistance(e.touches[0], e.touches[1]);
+                const currentAngle = getAngle(e.touches[0], e.touches[1]);
+
+                // Pinch for intensity
+                const scale = currentDistance / initialPinchDistance;
+                effectIntensity = Math.max(0.1, Math.min(3, scale));
+
+                // Rotation for twirl
+                if (currentEffect === 'twirl') {
+                    const angleDiff = currentAngle - initialTwirlAngle;
+                    twirlAngle = angleDiff * 2;
+                }
+
+                intensityDisplay.classList.add('visible');
+                intensityValue.textContent = Math.round(effectIntensity * 100) + '%';
+            }
+        }, { passive: true });
+
+        cameraContainer.addEventListener('touchend', () => {
+            isGesturing = false;
+            setTimeout(() => intensityDisplay.classList.remove('visible'), 1000);
+        });
+
+        cameraContainer.addEventListener('click', e => {
+            if (faceLockEnabled) return;
+            const rect = cameraContainer.getBoundingClientRect();
+            effectX = (e.clientX - rect.left) / rect.width;
+            effectY = (e.clientY - rect.top) / rect.height;
+        });
+
+        // Mouse wheel for intensity
+        cameraContainer.addEventListener('wheel', e => {
+            e.preventDefault();
+            effectIntensity = Math.max(0.1, Math.min(3, effectIntensity - e.deltaY * 0.001));
+            intensityDisplay.classList.add('visible');
+            intensityValue.textContent = Math.round(effectIntensity * 100) + '%';
+            setTimeout(() => intensityDisplay.classList.remove('visible'), 1000);
+        }, { passive: false });
+
+        // === FACE LOCK TOGGLE ===
         faceLockToggle.addEventListener('click', () => {
             faceLockEnabled = !faceLockEnabled;
             faceLockToggle.classList.toggle('active', faceLockEnabled);
-            faceIndicator.classList.toggle('visible', faceLockEnabled);
-
+            faceStatus.classList.toggle('visible', faceLockEnabled);
             if (!faceLockEnabled) {
-                faceDetected = false;
                 faceData = null;
-                effectCursor.classList.remove('visible');
+                faceStatus.classList.remove('detected');
             }
         });
 
-        // Effect position handling
-        function handleEffectPosition(e) {
-            if (faceLockEnabled) return;
-
-            const effect = distortionEffects.find(ef => ef.id === currentEffect);
-            if (!effect || !effect.movable) return;
-
-            const rect = cameraContainer.getBoundingClientRect();
-            let clientX, clientY;
-
-            if (e.touches) {
-                clientX = e.touches[0].clientX;
-                clientY = e.touches[0].clientY;
-            } else {
-                clientX = e.clientX;
-                clientY = e.clientY;
-            }
-
-            effectX = (clientX - rect.left) / rect.width;
-            effectY = (clientY - rect.top) / rect.height;
-
-            effectCursor.style.left = `${effectX * 100}%`;
-            effectCursor.style.top = `${effectY * 100}%`;
-        }
-
-        cameraContainer.addEventListener('click', handleEffectPosition);
-        cameraContainer.addEventListener('touchstart', handleEffectPosition);
-
-        // Draw face filters
-        function drawFaceFilter(landmarks) {
-            if (!landmarks || currentFaceFilter === 'face-none') return;
-
-            const positions = landmarks.positions;
-            const leftEye = landmarks.getLeftEye();
-            const rightEye = landmarks.getRightEye();
-            const nose = landmarks.getNose();
-            const mouth = landmarks.getMouth();
-            const jaw = landmarks.getJawOutline();
-
-            // Calculate face metrics
-            const eyeCenter = (pt) => ({
-                x: pt.reduce((a, p) => a + p.x, 0) / pt.length,
-                y: pt.reduce((a, p) => a + p.y, 0) / pt.length
-            });
-
-            const leftEyeCenter = eyeCenter(leftEye);
-            const rightEyeCenter = eyeCenter(rightEye);
-            const eyeDistance = Math.sqrt(
-                Math.pow(rightEyeCenter.x - leftEyeCenter.x, 2) +
-                Math.pow(rightEyeCenter.y - leftEyeCenter.y, 2)
-            );
-
-            const noseTop = nose[0];
-            const noseTip = nose[3];
-            const mouthCenter = {
-                x: mouth.reduce((a, p) => a + p.x, 0) / mouth.length,
-                y: mouth.reduce((a, p) => a + p.y, 0) / mouth.length
-            };
-
-            // Mirror x coordinates
-            const mirrorX = (x) => canvas.width - x;
-
-            ctx.save();
-
-            switch (currentFaceFilter) {
-                case 'sunglasses':
-                    drawSunglasses(mirrorX(leftEyeCenter.x), leftEyeCenter.y, mirrorX(rightEyeCenter.x), rightEyeCenter.y, eyeDistance);
-                    break;
-                case 'hearts':
-                    drawHearts(mirrorX(leftEyeCenter.x), leftEyeCenter.y, mirrorX(rightEyeCenter.x), rightEyeCenter.y, eyeDistance * 0.5);
-                    break;
-                case 'stars':
-                    drawStars(mirrorX(leftEyeCenter.x), leftEyeCenter.y, mirrorX(rightEyeCenter.x), rightEyeCenter.y, eyeDistance * 0.4);
-                    break;
-                case 'cat':
-                    drawCatEars(mirrorX(positions[0].x), positions[0].y, mirrorX(positions[16].x), positions[16].y, eyeDistance);
-                    drawCatNose(mirrorX(noseTip.x), noseTip.y, eyeDistance * 0.3);
-                    drawWhiskers(mirrorX(noseTip.x), noseTip.y, eyeDistance);
-                    break;
-                case 'dog':
-                    drawDogEars(mirrorX(positions[0].x), positions[0].y, mirrorX(positions[16].x), positions[16].y, eyeDistance);
-                    drawDogNose(mirrorX(noseTip.x), noseTip.y, eyeDistance * 0.4);
-                    drawDogTongue(mirrorX(mouthCenter.x), mouthCenter.y + eyeDistance * 0.3, eyeDistance * 0.3);
-                    break;
-                case 'crown':
-                    drawCrown(mirrorX((leftEyeCenter.x + rightEyeCenter.x) / 2), positions[24].y - eyeDistance * 0.8, eyeDistance * 1.5);
-                    break;
-                case 'devil':
-                    drawDevilHorns(mirrorX(positions[0].x), positions[0].y, mirrorX(positions[16].x), positions[16].y, eyeDistance);
-                    break;
-                case 'angel':
-                    drawHalo(mirrorX((leftEyeCenter.x + rightEyeCenter.x) / 2), positions[24].y - eyeDistance * 0.6, eyeDistance * 0.8);
-                    break;
-                case 'clown':
-                    drawClownNose(mirrorX(noseTip.x), noseTip.y, eyeDistance * 0.25);
-                    drawClownMakeup(mirrorX(leftEyeCenter.x), leftEyeCenter.y, mirrorX(rightEyeCenter.x), rightEyeCenter.y, eyeDistance * 0.3);
-                    break;
-                case 'mustache':
-                    drawMustache(mirrorX(noseTip.x), noseTip.y + eyeDistance * 0.15, eyeDistance * 0.8);
-                    break;
-                case 'nerd':
-                    drawNerdGlasses(mirrorX(leftEyeCenter.x), leftEyeCenter.y, mirrorX(rightEyeCenter.x), rightEyeCenter.y, eyeDistance);
-                    break;
-                case 'alien':
-                    drawAlienEyes(mirrorX(leftEyeCenter.x), leftEyeCenter.y, mirrorX(rightEyeCenter.x), rightEyeCenter.y, eyeDistance * 0.6);
-                    break;
-                case 'robot':
-                    drawRobotFace(mirrorX(leftEyeCenter.x), leftEyeCenter.y, mirrorX(rightEyeCenter.x), rightEyeCenter.y, eyeDistance);
-                    break;
-                case 'pirate':
-                    drawEyepatch(mirrorX(leftEyeCenter.x), leftEyeCenter.y, eyeDistance * 0.5);
-                    drawPirateHat(mirrorX((leftEyeCenter.x + rightEyeCenter.x) / 2), positions[24].y - eyeDistance * 0.5, eyeDistance * 1.5);
-                    break;
-            }
-
-            ctx.restore();
-        }
-
-        // Face filter drawing functions
-        function drawSunglasses(lx, ly, rx, ry, size) {
-            const gradient = ctx.createLinearGradient(rx, ly - size/2, lx, ly + size/2);
-            gradient.addColorStop(0, '#1a1a1a');
-            gradient.addColorStop(1, '#333');
-
-            // Left lens
-            ctx.beginPath();
-            ctx.ellipse(lx, ly, size * 0.45, size * 0.35, 0, 0, Math.PI * 2);
-            ctx.fillStyle = gradient;
-            ctx.fill();
-            ctx.strokeStyle = '#000';
-            ctx.lineWidth = 3;
-            ctx.stroke();
-
-            // Right lens
-            ctx.beginPath();
-            ctx.ellipse(rx, ry, size * 0.45, size * 0.35, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Bridge
-            ctx.beginPath();
-            ctx.moveTo(lx - size * 0.4, ly);
-            ctx.lineTo(rx + size * 0.4, ry);
-            ctx.stroke();
-
-            // Shine
-            ctx.beginPath();
-            ctx.ellipse(lx - size * 0.15, ly - size * 0.1, size * 0.1, size * 0.05, -0.3, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255,255,255,0.3)';
-            ctx.fill();
-        }
-
-        function drawHearts(lx, ly, rx, ry, size) {
-            function heart(x, y, s) {
-                ctx.beginPath();
-                ctx.moveTo(x, y + s * 0.3);
-                ctx.bezierCurveTo(x, y, x - s, y, x - s, y + s * 0.3);
-                ctx.bezierCurveTo(x - s, y + s * 0.6, x, y + s, x, y + s);
-                ctx.bezierCurveTo(x, y + s, x + s, y + s * 0.6, x + s, y + s * 0.3);
-                ctx.bezierCurveTo(x + s, y, x, y, x, y + s * 0.3);
-                ctx.fillStyle = '#ff1493';
-                ctx.fill();
-            }
-            heart(lx, ly - size * 0.5, size);
-            heart(rx, ry - size * 0.5, size);
-        }
-
-        function drawStars(lx, ly, rx, ry, size) {
-            function star(x, y, s) {
-                ctx.beginPath();
-                for (let i = 0; i < 5; i++) {
-                    const angle = (i * 4 * Math.PI) / 5 - Math.PI / 2;
-                    const px = x + Math.cos(angle) * s;
-                    const py = y + Math.sin(angle) * s;
-                    if (i === 0) ctx.moveTo(px, py);
-                    else ctx.lineTo(px, py);
-                }
-                ctx.closePath();
-                ctx.fillStyle = '#ffd700';
-                ctx.fill();
-                ctx.strokeStyle = '#ff8c00';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-            }
-            star(lx, ly, size);
-            star(rx, ry, size);
-        }
-
-        function drawCatEars(lx, ly, rx, ry, size) {
-            // Left ear
-            ctx.beginPath();
-            ctx.moveTo(lx + size * 0.3, ly);
-            ctx.lineTo(lx + size * 0.1, ly - size * 0.8);
-            ctx.lineTo(lx - size * 0.3, ly - size * 0.2);
-            ctx.closePath();
-            ctx.fillStyle = '#ff9999';
-            ctx.fill();
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            // Right ear
-            ctx.beginPath();
-            ctx.moveTo(rx - size * 0.3, ry);
-            ctx.lineTo(rx - size * 0.1, ry - size * 0.8);
-            ctx.lineTo(rx + size * 0.3, ry - size * 0.2);
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-
-            // Inner ears
-            ctx.fillStyle = '#ffcccc';
-            ctx.beginPath();
-            ctx.moveTo(lx + size * 0.2, ly - size * 0.1);
-            ctx.lineTo(lx + size * 0.1, ly - size * 0.5);
-            ctx.lineTo(lx - size * 0.1, ly - size * 0.15);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.moveTo(rx - size * 0.2, ry - size * 0.1);
-            ctx.lineTo(rx - size * 0.1, ry - size * 0.5);
-            ctx.lineTo(rx + size * 0.1, ry - size * 0.15);
-            ctx.closePath();
-            ctx.fill();
-        }
-
-        function drawCatNose(x, y, size) {
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(x - size * 0.4, y - size * 0.5);
-            ctx.lineTo(x + size * 0.4, y - size * 0.5);
-            ctx.closePath();
-            ctx.fillStyle = '#ff6b6b';
-            ctx.fill();
-        }
-
-        function drawWhiskers(x, y, size) {
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = 2;
-
-            // Left whiskers
-            for (let i = -1; i <= 1; i++) {
-                ctx.beginPath();
-                ctx.moveTo(x + size * 0.2, y + i * size * 0.1);
-                ctx.lineTo(x + size * 0.8, y + i * size * 0.15);
-                ctx.stroke();
-            }
-
-            // Right whiskers
-            for (let i = -1; i <= 1; i++) {
-                ctx.beginPath();
-                ctx.moveTo(x - size * 0.2, y + i * size * 0.1);
-                ctx.lineTo(x - size * 0.8, y + i * size * 0.15);
-                ctx.stroke();
-            }
-        }
-
-        function drawDogEars(lx, ly, rx, ry, size) {
-            // Left floppy ear
-            ctx.beginPath();
-            ctx.ellipse(lx + size * 0.2, ly + size * 0.3, size * 0.35, size * 0.6, 0.3, 0, Math.PI * 2);
-            ctx.fillStyle = '#8B4513';
-            ctx.fill();
-            ctx.strokeStyle = '#5D3A1A';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            // Right floppy ear
-            ctx.beginPath();
-            ctx.ellipse(rx - size * 0.2, ry + size * 0.3, size * 0.35, size * 0.6, -0.3, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-        }
-
-        function drawDogNose(x, y, size) {
-            ctx.beginPath();
-            ctx.ellipse(x, y, size, size * 0.7, 0, 0, Math.PI * 2);
-            ctx.fillStyle = '#1a1a1a';
-            ctx.fill();
-
-            // Shine
-            ctx.beginPath();
-            ctx.ellipse(x - size * 0.3, y - size * 0.2, size * 0.2, size * 0.15, 0, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255,255,255,0.4)';
-            ctx.fill();
-        }
-
-        function drawDogTongue(x, y, size) {
-            ctx.beginPath();
-            ctx.ellipse(x, y + size * 0.5, size * 0.5, size, 0, 0, Math.PI * 2);
-            ctx.fillStyle = '#ff6b8a';
-            ctx.fill();
-            ctx.strokeStyle = '#cc5577';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            // Center line
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(x, y + size * 1.2);
-            ctx.stroke();
-        }
-
-        function drawCrown(x, y, size) {
-            ctx.beginPath();
-            ctx.moveTo(x - size * 0.5, y + size * 0.4);
-            ctx.lineTo(x - size * 0.5, y);
-            ctx.lineTo(x - size * 0.25, y + size * 0.2);
-            ctx.lineTo(x, y - size * 0.2);
-            ctx.lineTo(x + size * 0.25, y + size * 0.2);
-            ctx.lineTo(x + size * 0.5, y);
-            ctx.lineTo(x + size * 0.5, y + size * 0.4);
-            ctx.closePath();
-
-            const gradient = ctx.createLinearGradient(x, y - size * 0.2, x, y + size * 0.4);
-            gradient.addColorStop(0, '#ffd700');
-            gradient.addColorStop(1, '#ff8c00');
-            ctx.fillStyle = gradient;
-            ctx.fill();
-            ctx.strokeStyle = '#b8860b';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            // Jewels
-            ctx.beginPath();
-            ctx.arc(x, y, size * 0.08, 0, Math.PI * 2);
-            ctx.fillStyle = '#ff0000';
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.arc(x - size * 0.35, y + size * 0.15, size * 0.06, 0, Math.PI * 2);
-            ctx.fillStyle = '#00ff00';
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.arc(x + size * 0.35, y + size * 0.15, size * 0.06, 0, Math.PI * 2);
-            ctx.fillStyle = '#0000ff';
-            ctx.fill();
-        }
-
-        function drawDevilHorns(lx, ly, rx, ry, size) {
-            // Left horn
-            ctx.beginPath();
-            ctx.moveTo(lx + size * 0.2, ly - size * 0.1);
-            ctx.quadraticCurveTo(lx + size * 0.3, ly - size * 0.8, lx, ly - size * 0.9);
-            ctx.quadraticCurveTo(lx + size * 0.1, ly - size * 0.5, lx + size * 0.05, ly - size * 0.1);
-            ctx.closePath();
-
-            const gradientL = ctx.createLinearGradient(lx, ly - size, lx, ly);
-            gradientL.addColorStop(0, '#8B0000');
-            gradientL.addColorStop(1, '#ff0000');
-            ctx.fillStyle = gradientL;
-            ctx.fill();
-
-            // Right horn
-            ctx.beginPath();
-            ctx.moveTo(rx - size * 0.2, ry - size * 0.1);
-            ctx.quadraticCurveTo(rx - size * 0.3, ry - size * 0.8, rx, ry - size * 0.9);
-            ctx.quadraticCurveTo(rx - size * 0.1, ry - size * 0.5, rx - size * 0.05, ry - size * 0.1);
-            ctx.closePath();
-            ctx.fill();
-        }
-
-        function drawHalo(x, y, size) {
-            ctx.beginPath();
-            ctx.ellipse(x, y, size, size * 0.25, 0, 0, Math.PI * 2);
-            ctx.strokeStyle = '#ffd700';
-            ctx.lineWidth = size * 0.15;
-            ctx.stroke();
-
-            // Glow
-            ctx.shadowColor = '#ffd700';
-            ctx.shadowBlur = 20;
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-        }
-
-        function drawClownNose(x, y, size) {
-            ctx.beginPath();
-            ctx.arc(x, y, size, 0, Math.PI * 2);
-            const gradient = ctx.createRadialGradient(x - size * 0.3, y - size * 0.3, 0, x, y, size);
-            gradient.addColorStop(0, '#ff4444');
-            gradient.addColorStop(1, '#cc0000');
-            ctx.fillStyle = gradient;
-            ctx.fill();
-
-            // Shine
-            ctx.beginPath();
-            ctx.ellipse(x - size * 0.3, y - size * 0.3, size * 0.2, size * 0.15, -0.5, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255,255,255,0.5)';
-            ctx.fill();
-        }
-
-        function drawClownMakeup(lx, ly, rx, ry, size) {
-            // Left eye makeup
-            ctx.beginPath();
-            ctx.arc(lx, ly, size, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(0, 150, 255, 0.5)';
-            ctx.fill();
-
-            // Right eye makeup
-            ctx.beginPath();
-            ctx.arc(rx, ry, size, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255, 150, 0, 0.5)';
-            ctx.fill();
-        }
-
-        function drawMustache(x, y, size) {
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.bezierCurveTo(x + size * 0.3, y - size * 0.3, x + size * 0.6, y - size * 0.2, x + size * 0.6, y + size * 0.1);
-            ctx.bezierCurveTo(x + size * 0.4, y, x + size * 0.2, y + size * 0.1, x, y + size * 0.05);
-            ctx.bezierCurveTo(x - size * 0.2, y + size * 0.1, x - size * 0.4, y, x - size * 0.6, y + size * 0.1);
-            ctx.bezierCurveTo(x - size * 0.6, y - size * 0.2, x - size * 0.3, y - size * 0.3, x, y);
-            ctx.fillStyle = '#2c1810';
-            ctx.fill();
-        }
-
-        function drawNerdGlasses(lx, ly, rx, ry, size) {
-            ctx.strokeStyle = '#1a1a1a';
-            ctx.lineWidth = 4;
-
-            // Left frame
-            ctx.beginPath();
-            ctx.rect(lx - size * 0.4, ly - size * 0.3, size * 0.8, size * 0.6);
-            ctx.stroke();
-            ctx.fillStyle = 'rgba(255,255,255,0.2)';
-            ctx.fill();
-
-            // Right frame
-            ctx.beginPath();
-            ctx.rect(rx - size * 0.4, ry - size * 0.3, size * 0.8, size * 0.6);
-            ctx.stroke();
-            ctx.fill();
-
-            // Bridge
-            ctx.beginPath();
-            ctx.moveTo(lx - size * 0.4, ly);
-            ctx.lineTo(rx + size * 0.4, ry);
-            ctx.stroke();
-
-            // Tape on bridge
-            ctx.fillStyle = '#f5f5dc';
-            ctx.fillRect((lx + rx) / 2 - size * 0.1, (ly + ry) / 2 - size * 0.08, size * 0.2, size * 0.16);
-        }
-
-        function drawAlienEyes(lx, ly, rx, ry, size) {
-            // Left eye
-            ctx.beginPath();
-            ctx.ellipse(lx, ly, size * 0.8, size * 1.2, 0.2, 0, Math.PI * 2);
-            const gradientL = ctx.createRadialGradient(lx, ly, 0, lx, ly, size);
-            gradientL.addColorStop(0, '#000');
-            gradientL.addColorStop(0.5, '#004400');
-            gradientL.addColorStop(1, '#00ff00');
-            ctx.fillStyle = gradientL;
-            ctx.fill();
-
-            // Right eye
-            ctx.beginPath();
-            ctx.ellipse(rx, ry, size * 0.8, size * 1.2, -0.2, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        function drawRobotFace(lx, ly, rx, ry, size) {
-            // Left eye
-            ctx.beginPath();
-            ctx.rect(lx - size * 0.35, ly - size * 0.25, size * 0.7, size * 0.5);
-            ctx.fillStyle = '#333';
-            ctx.fill();
-            ctx.strokeStyle = '#666';
-            ctx.lineWidth = 3;
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.arc(lx, ly, size * 0.15, 0, Math.PI * 2);
-            ctx.fillStyle = '#00ff00';
-            ctx.fill();
-
-            // Right eye
-            ctx.beginPath();
-            ctx.rect(rx - size * 0.35, ry - size * 0.25, size * 0.7, size * 0.5);
-            ctx.fillStyle = '#333';
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.arc(rx, ry, size * 0.15, 0, Math.PI * 2);
-            ctx.fillStyle = '#ff0000';
-            ctx.fill();
-
-            // Antenna
-            const midX = (lx + rx) / 2;
-            const midY = Math.min(ly, ry) - size * 0.8;
-            ctx.beginPath();
-            ctx.moveTo(midX, midY + size * 0.5);
-            ctx.lineTo(midX, midY);
-            ctx.strokeStyle = '#888';
-            ctx.lineWidth = 4;
-            ctx.stroke();
-
-            ctx.beginPath();
-            ctx.arc(midX, midY, size * 0.12, 0, Math.PI * 2);
-            ctx.fillStyle = '#ff0000';
-            ctx.fill();
-        }
-
-        function drawEyepatch(x, y, size) {
-            ctx.beginPath();
-            ctx.ellipse(x, y, size, size * 0.7, 0, 0, Math.PI * 2);
-            ctx.fillStyle = '#1a1a1a';
-            ctx.fill();
-
-            // Strap
-            ctx.beginPath();
-            ctx.moveTo(x - size, y);
-            ctx.lineTo(x - size * 3, y - size * 0.5);
-            ctx.moveTo(x + size, y);
-            ctx.lineTo(x + size * 3, y - size * 0.5);
-            ctx.strokeStyle = '#1a1a1a';
-            ctx.lineWidth = 4;
-            ctx.stroke();
-        }
-
-        function drawPirateHat(x, y, size) {
-            // Hat base
-            ctx.beginPath();
-            ctx.ellipse(x, y + size * 0.3, size * 0.8, size * 0.15, 0, 0, Math.PI * 2);
-            ctx.fillStyle = '#1a1a1a';
-            ctx.fill();
-
-            // Hat top
-            ctx.beginPath();
-            ctx.moveTo(x - size * 0.7, y + size * 0.3);
-            ctx.quadraticCurveTo(x - size * 0.5, y - size * 0.3, x, y - size * 0.1);
-            ctx.quadraticCurveTo(x + size * 0.5, y - size * 0.3, x + size * 0.7, y + size * 0.3);
-            ctx.lineTo(x - size * 0.7, y + size * 0.3);
-            ctx.fill();
-
-            // Skull and crossbones
-            ctx.beginPath();
-            ctx.arc(x, y + size * 0.05, size * 0.15, 0, Math.PI * 2);
-            ctx.fillStyle = 'white';
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.moveTo(x - size * 0.2, y + size * 0.2);
-            ctx.lineTo(x + size * 0.2, y + size * 0.3);
-            ctx.moveTo(x + size * 0.2, y + size * 0.2);
-            ctx.lineTo(x - size * 0.2, y + size * 0.3);
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 3;
-            ctx.stroke();
-        }
-
-        // Apply effects
-        function applyEffect(imageData) {
-            const data = imageData.data;
-            const width = imageData.width;
-            const height = imageData.height;
+        // === DISTORTION EFFECTS ===
+        function applyDistortionEffect(imageData) {
+            const { data, width, height } = imageData;
             const centerX = effectX * width;
             const centerY = effectY * height;
-            const radius = Math.min(width, height) * 0.35;
+            const radius = Math.min(width, height) * 0.4 * effectIntensity;
+            const time = Date.now() / 1000;
 
-            switch (currentEffect) {
-                case 'stretch':
-                    return applyDistortion(imageData, (x, y) => {
-                        const dx = x - centerX;
-                        const dy = y - centerY;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
+            const srcData = new Uint8ClampedArray(data);
+
+            const distort = (x, y) => {
+                const dx = x - centerX;
+                const dy = y - centerY;
+                const dist = Math.hypot(dx, dy);
+
+                switch (currentEffect) {
+                    case 'bighead':
                         if (dist < radius) {
-                            const factor = 1 + 0.5 * (1 - dist / radius);
-                            return [centerX + dx * factor, y];
+                            const f = Math.pow(dist / radius, 0.4 * effectIntensity);
+                            return [centerX + dx * f, centerY + dy * f];
                         }
                         return [x, y];
-                    });
 
-                case 'squeeze':
-                    return applyDistortion(imageData, (x, y) => {
-                        const dx = x - centerX;
-                        const dy = y - centerY;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
+                    case 'tinyhead':
                         if (dist < radius) {
-                            const factor = 1 + 0.5 * (1 - dist / radius);
-                            return [x, centerY + dy * factor];
+                            const f = Math.pow(dist / radius, 2.5 / effectIntensity);
+                            return [centerX + dx * f, centerY + dy * f];
                         }
                         return [x, y];
-                    });
 
-                case 'twirl':
-                    return applyDistortion(imageData, (x, y) => {
-                        const dx = x - centerX;
-                        const dy = y - centerY;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
+                    case 'stretch-h':
                         if (dist < radius) {
-                            const angle = (1 - dist / radius) * Math.PI * 1.5;
+                            const f = 1 + 0.8 * effectIntensity * (1 - dist / radius);
+                            return [centerX + dx * f, y];
+                        }
+                        return [x, y];
+
+                    case 'squish':
+                        if (dist < radius) {
+                            const f = 1 + 0.8 * effectIntensity * (1 - dist / radius);
+                            return [x, centerY + dy * f];
+                        }
+                        return [x, y];
+
+                    case 'bulge':
+                        if (dist < radius) {
+                            const f = Math.pow(dist / radius, 0.3 / effectIntensity);
+                            return [centerX + dx * f, centerY + dy * f];
+                        }
+                        return [x, y];
+
+                    case 'twirl':
+                        if (dist < radius) {
+                            const angle = (1 - dist / radius) * Math.PI * 2 * effectIntensity + twirlAngle;
                             const cos = Math.cos(angle);
                             const sin = Math.sin(angle);
                             return [centerX + dx * cos - dy * sin, centerY + dx * sin + dy * cos];
                         }
                         return [x, y];
-                    });
 
-                case 'bulge':
-                    return applyDistortion(imageData, (x, y) => {
-                        const dx = x - centerX;
-                        const dy = y - centerY;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
+                    case 'wobble':
+                        const wobbleX = Math.sin(y / 15 + time * 4) * 20 * effectIntensity;
+                        const wobbleY = Math.sin(x / 20 + time * 3) * 15 * effectIntensity;
+                        return [x + wobbleX, y + wobbleY];
+
+                    case 'funhouse':
+                        const funX = Math.sin(y / 30) * 30 * effectIntensity;
+                        const funY = Math.sin(x / 40 + time) * 20 * effectIntensity;
+                        return [x + funX, y + funY];
+
+                    case 'drunk':
+                        const drunkX = Math.sin(y / 25 + time * 2) * 25 * effectIntensity;
+                        const drunkY = Math.cos(x / 30 + time * 1.5) * 20 * effectIntensity;
+                        const breathe = 1 + Math.sin(time * 2) * 0.05 * effectIntensity;
+                        return [(x - width/2) * breathe + width/2 + drunkX, (y - height/2) * breathe + height/2 + drunkY];
+
+                    case 'squeeze':
                         if (dist < radius) {
-                            const factor = Math.pow(dist / radius, 0.5);
-                            return [centerX + dx * factor, centerY + dy * factor];
+                            const squeeze = Math.pow(dist / radius, 1.5 * effectIntensity);
+                            return [centerX + dx * squeeze, centerY + dy * squeeze];
                         }
                         return [x, y];
-                    });
 
-                case 'pinch':
-                    return applyDistortion(imageData, (x, y) => {
-                        const dx = x - centerX;
-                        const dy = y - centerY;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
+                    case 'implode':
                         if (dist < radius) {
-                            const factor = Math.pow(dist / radius, 2);
-                            return [centerX + dx * factor, centerY + dy * factor];
+                            const implode = Math.pow(dist / radius, 3 * effectIntensity);
+                            return [centerX + dx * implode, centerY + dy * implode];
                         }
                         return [x, y];
-                    });
 
-                case 'fisheye':
-                    return applyDistortion(imageData, (x, y) => {
-                        const dx = x - centerX;
-                        const dy = y - centerY;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
-                        if (dist < radius) {
-                            const r = dist / radius;
-                            const theta = Math.atan2(dy, dx);
-                            const newR = radius * Math.pow(r, 1.5);
-                            return [centerX + newR * Math.cos(theta), centerY + newR * Math.sin(theta)];
-                        }
-                        return [x, y];
-                    });
-
-                case 'mirror-h':
-                    return applyDistortion(imageData, (x, y) => [width - x, y]);
-
-                case 'mirror-v':
-                    return applyDistortion(imageData, (x, y) => [x, height - y]);
-
-                case 'kaleidoscope':
-                    return applyDistortion(imageData, (x, y) => {
-                        const cx = width / 2, cy = height / 2;
-                        const dx = x - cx, dy = y - cy;
-                        let angle = Math.atan2(dy, dx);
+                    case 'kaleidoscope':
                         const segments = 8;
-                        const segmentAngle = (2 * Math.PI) / segments;
-                        angle = Math.abs((angle % segmentAngle) - segmentAngle / 2);
-                        const dist = Math.sqrt(dx * dx + dy * dy);
-                        return [cx + dist * Math.cos(angle), cy + dist * Math.sin(angle)];
-                    });
+                        const cx = width / 2, cy = height / 2;
+                        const ddx = x - cx, ddy = y - cy;
+                        let angle = Math.atan2(ddy, ddx);
+                        const segAngle = (2 * Math.PI) / segments;
+                        angle = Math.abs(((angle % segAngle) + segAngle) % segAngle - segAngle / 2);
+                        const d = Math.hypot(ddx, ddy);
+                        return [cx + d * Math.cos(angle), cy + d * Math.sin(angle)];
 
-                case 'wave':
-                    const time = Date.now() / 500;
-                    return applyDistortion(imageData, (x, y) => {
-                        const waveX = Math.sin(y / 20 + time) * 15;
-                        const waveY = Math.sin(x / 25 + time) * 10;
-                        return [x + waveX, y + waveY];
-                    });
+                    case 'mirror4':
+                        let mx = x, my = y;
+                        if (x > width / 2) mx = width - x;
+                        if (y > height / 2) my = height - y;
+                        return [mx, my];
 
+                    case 'tunnel':
+                        const tcx = width / 2, tcy = height / 2;
+                        const tdx = x - tcx, tdy = y - tcy;
+                        const td = Math.hypot(tdx, tdy);
+                        const tunnelScale = 1 + Math.sin(td / 30 - time * 3) * 0.3 * effectIntensity;
+                        return [tcx + tdx * tunnelScale, tcy + tdy * tunnelScale];
+
+                    case 'fractal':
+                        const fcx = width / 2, fcy = height / 2;
+                        const fdx = x - fcx, fdy = y - fcy;
+                        const fscale = 0.5 + Math.abs(Math.sin(time)) * 0.5;
+                        return [fcx + (fdx * fscale) % (width/2), fcy + (fdy * fscale) % (height/2)];
+
+                    default:
+                        return [x, y];
+                }
+            };
+
+            // Apply distortion
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const [sx, sy] = distort(x, y);
+                    const srcX = Math.max(0, Math.min(width - 1, Math.floor(sx)));
+                    const srcY = Math.max(0, Math.min(height - 1, Math.floor(sy)));
+                    const srcIdx = (srcY * width + srcX) * 4;
+                    const dstIdx = (y * width + x) * 4;
+                    data[dstIdx] = srcData[srcIdx];
+                    data[dstIdx + 1] = srcData[srcIdx + 1];
+                    data[dstIdx + 2] = srcData[srcIdx + 2];
+                    data[dstIdx + 3] = srcData[srcIdx + 3];
+                }
+            }
+
+            return imageData;
+        }
+
+        // === COLOR EFFECTS ===
+        function applyColorEffect(imageData) {
+            const { data, width, height } = imageData;
+
+            switch (currentEffect) {
                 case 'pixelate':
-                    const pixelSize = 12;
-                    for (let py = 0; py < height; py += pixelSize) {
-                        for (let px = 0; px < width; px += pixelSize) {
+                    const size = Math.max(4, Math.floor(16 * effectIntensity));
+                    for (let py = 0; py < height; py += size) {
+                        for (let px = 0; px < width; px += size) {
                             const idx = (py * width + px) * 4;
                             const r = data[idx], g = data[idx + 1], b = data[idx + 2];
-                            for (let dy = 0; dy < pixelSize && py + dy < height; dy++) {
-                                for (let dx = 0; dx < pixelSize && px + dx < width; dx++) {
+                            for (let dy = 0; dy < size && py + dy < height; dy++) {
+                                for (let dx = 0; dx < size && px + dx < width; dx++) {
                                     const i = ((py + dy) * width + (px + dx)) * 4;
-                                    data[i] = r; data[i + 1] = g; data[i + 2] = b;
+                                    data[i] = r;
+                                    data[i + 1] = g;
+                                    data[i + 2] = b;
                                 }
                             }
                         }
                     }
-                    return imageData;
-
-                case 'rgbsplit':
-                    const offset = 8;
-                    const copy = new Uint8ClampedArray(data);
-                    for (let i = 0; i < data.length; i += 4) {
-                        const x = (i / 4) % width;
-                        if (x > offset) data[i] = copy[i - offset * 4];
-                        if (x < width - offset) data[i + 2] = copy[i + 2 + offset * 4];
-                    }
-                    return imageData;
+                    break;
 
                 case 'thermal':
                     for (let i = 0; i < data.length; i += 4) {
                         const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-                        if (avg < 85) {
-                            data[i] = 0; data[i + 1] = 0; data[i + 2] = avg * 3;
-                        } else if (avg < 170) {
-                            data[i] = (avg - 85) * 3; data[i + 1] = 0; data[i + 2] = 255 - (avg - 85) * 3;
+                        if (avg < 64) {
+                            data[i] = 0; data[i + 1] = 0; data[i + 2] = avg * 4;
+                        } else if (avg < 128) {
+                            data[i] = (avg - 64) * 4; data[i + 1] = 0; data[i + 2] = 255;
+                        } else if (avg < 192) {
+                            data[i] = 255; data[i + 1] = (avg - 128) * 4; data[i + 2] = 255 - (avg - 128) * 4;
                         } else {
-                            data[i] = 255; data[i + 1] = (avg - 170) * 3; data[i + 2] = 0;
+                            data[i] = 255; data[i + 1] = 255; data[i + 2] = (avg - 192) * 4;
                         }
                     }
-                    return imageData;
+                    break;
 
-                case 'comic':
+                case 'neon':
                     for (let i = 0; i < data.length; i += 4) {
-                        data[i] = Math.round(data[i] / 64) * 64;
-                        data[i + 1] = Math.round(data[i + 1] / 64) * 64;
-                        data[i + 2] = Math.round(data[i + 2] / 64) * 64;
+                        data[i] = Math.min(255, data[i] * 1.5);
+                        data[i + 1] = data[i + 1] * 0.3;
+                        data[i + 2] = Math.min(255, data[i + 2] * 2);
                     }
-                    return imageData;
+                    break;
 
-                case 'glitch':
-                    const glitchLines = 15;
-                    for (let g = 0; g < glitchLines; g++) {
-                        const y = Math.floor(Math.random() * height);
-                        const shift = Math.floor(Math.random() * 40 - 20);
-                        for (let x = 0; x < width; x++) {
-                            const srcX = Math.max(0, Math.min(width - 1, x + shift));
-                            const srcIdx = (y * width + srcX) * 4;
-                            const dstIdx = (y * width + x) * 4;
-                            if (Math.random() > 0.5) {
-                                data[dstIdx] = data[srcIdx];
-                                data[dstIdx + 1] = data[srcIdx + 1];
-                                data[dstIdx + 2] = data[srcIdx + 2];
-                            }
-                        }
-                    }
-                    return imageData;
-
-                case 'vintage':
+                case 'posterize':
+                    const levels = Math.max(2, Math.floor(6 / effectIntensity));
+                    const step = 255 / levels;
                     for (let i = 0; i < data.length; i += 4) {
-                        const r = data[i], g = data[i + 1], b = data[i + 2];
-                        data[i] = Math.min(255, r * 0.9 + 40);
-                        data[i + 1] = Math.min(255, g * 0.7 + 20);
-                        data[i + 2] = Math.min(255, b * 0.5);
+                        data[i] = Math.round(data[i] / step) * step;
+                        data[i + 1] = Math.round(data[i + 1] / step) * step;
+                        data[i + 2] = Math.round(data[i + 2] / step) * step;
                     }
-                    return imageData;
+                    break;
 
                 case 'invert':
                     for (let i = 0; i < data.length; i += 4) {
@@ -1760,58 +1266,461 @@
                         data[i + 1] = 255 - data[i + 1];
                         data[i + 2] = 255 - data[i + 2];
                     }
-                    return imageData;
+                    break;
 
                 case 'emboss':
-                    const embossCopy = new Uint8ClampedArray(data);
+                    const copy = new Uint8ClampedArray(data);
                     for (let y = 1; y < height - 1; y++) {
                         for (let x = 1; x < width - 1; x++) {
                             const idx = (y * width + x) * 4;
-                            const idxPrev = ((y - 1) * width + (x - 1)) * 4;
+                            const prev = ((y - 1) * width + (x - 1)) * 4;
                             for (let c = 0; c < 3; c++) {
-                                data[idx + c] = Math.min(255, Math.max(0, 128 + embossCopy[idx + c] - embossCopy[idxPrev + c]));
+                                data[idx + c] = Math.min(255, Math.max(0, 128 + (copy[idx + c] - copy[prev + c]) * effectIntensity));
                             }
                         }
                     }
-                    return imageData;
+                    break;
 
-                case 'posterize':
-                    const levels = 4;
+                case 'cartoon-filter':
                     for (let i = 0; i < data.length; i += 4) {
-                        data[i] = Math.floor(data[i] / (256 / levels)) * (256 / levels);
-                        data[i + 1] = Math.floor(data[i + 1] / (256 / levels)) * (256 / levels);
-                        data[i + 2] = Math.floor(data[i + 2] / (256 / levels)) * (256 / levels);
+                        data[i] = Math.round(data[i] / 48) * 48;
+                        data[i + 1] = Math.round(data[i + 1] / 48) * 48;
+                        data[i + 2] = Math.round(data[i + 2] / 48) * 48;
                     }
-                    return imageData;
-
-                default:
-                    return imageData;
+                    break;
             }
-        }
 
-        function applyDistortion(imageData, transform) {
-            const srcData = new Uint8ClampedArray(imageData.data);
-            const dstData = imageData.data;
-            const width = imageData.width;
-            const height = imageData.height;
-
-            for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
-                    const [srcX, srcY] = transform(x, y);
-                    const sx = Math.max(0, Math.min(width - 1, Math.floor(srcX)));
-                    const sy = Math.max(0, Math.min(height - 1, Math.floor(srcY)));
-                    const srcIdx = (sy * width + sx) * 4;
-                    const dstIdx = (y * width + x) * 4;
-                    dstData[dstIdx] = srcData[srcIdx];
-                    dstData[dstIdx + 1] = srcData[srcIdx + 1];
-                    dstData[dstIdx + 2] = srcData[srcIdx + 2];
-                    dstData[dstIdx + 3] = srcData[srcIdx + 3];
-                }
-            }
             return imageData;
         }
 
-        // Render loop
+        // === FACE EFFECTS ===
+        function drawFaceEffects() {
+            if (!faceData || currentFaceEffect === 'face-none') return;
+
+            const landmarks = faceData.landmarks;
+            const positions = landmarks.positions;
+
+            const leftEye = landmarks.getLeftEye();
+            const rightEye = landmarks.getRightEye();
+            const nose = landmarks.getNose();
+            const mouth = landmarks.getMouth();
+            const jaw = landmarks.getJawOutline();
+
+            const eyeCenter = pts => ({
+                x: canvas.width - pts.reduce((a, p) => a + p.x, 0) / pts.length,
+                y: pts.reduce((a, p) => a + p.y, 0) / pts.length
+            });
+
+            const leftEyeC = eyeCenter(leftEye);
+            const rightEyeC = eyeCenter(rightEye);
+            const eyeDist = Math.hypot(rightEyeC.x - leftEyeC.x, rightEyeC.y - leftEyeC.y);
+
+            const noseC = { x: canvas.width - nose[3].x, y: nose[3].y };
+            const mouthC = {
+                x: canvas.width - mouth.reduce((a, p) => a + p.x, 0) / mouth.length,
+                y: mouth.reduce((a, p) => a + p.y, 0) / mouth.length
+            };
+
+            const faceTop = canvas.width - positions[27].x;
+            const faceTopY = positions[27].y;
+
+            ctx.save();
+
+            switch (currentFaceEffect) {
+                case 'googly':
+                    drawGooglyEyes(leftEyeC, rightEyeC, eyeDist * 0.6);
+                    break;
+                case 'bigmouth':
+                    drawBigMouth(mouthC, eyeDist * 1.2);
+                    break;
+                case 'bignose':
+                    drawBigNose(noseC, eyeDist * 0.8);
+                    break;
+                case 'vampire':
+                    drawVampire(mouthC, leftEyeC, rightEyeC, eyeDist);
+                    break;
+                case 'cyclops':
+                    drawCyclops(leftEyeC, rightEyeC, eyeDist * 0.9);
+                    break;
+                case 'cartoon':
+                    drawCartoonFace(leftEyeC, rightEyeC, noseC, mouthC, eyeDist);
+                    break;
+                case 'zombie':
+                    drawZombie(leftEyeC, rightEyeC, mouthC, eyeDist);
+                    break;
+                case 'oldage':
+                    drawOldAge(leftEyeC, rightEyeC, mouthC, eyeDist);
+                    break;
+                case 'beauty':
+                    drawBeauty(leftEyeC, rightEyeC, eyeDist);
+                    break;
+                case 'demon':
+                    drawDemon(leftEyeC, rightEyeC, faceTopY, eyeDist);
+                    break;
+                case 'alien':
+                    drawAlien(leftEyeC, rightEyeC, eyeDist);
+                    break;
+            }
+
+            ctx.restore();
+        }
+
+        function drawGooglyEyes(left, right, size) {
+            const time = Date.now() / 200;
+
+            [left, right].forEach(eye => {
+                // White
+                ctx.beginPath();
+                ctx.arc(eye.x, eye.y, size, 0, Math.PI * 2);
+                ctx.fillStyle = 'white';
+                ctx.fill();
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Pupil that moves
+                const pupilX = eye.x + Math.sin(time) * size * 0.3;
+                const pupilY = eye.y + Math.cos(time * 1.3) * size * 0.3;
+                ctx.beginPath();
+                ctx.arc(pupilX, pupilY, size * 0.5, 0, Math.PI * 2);
+                ctx.fillStyle = '#111';
+                ctx.fill();
+
+                // Shine
+                ctx.beginPath();
+                ctx.arc(pupilX - size * 0.15, pupilY - size * 0.15, size * 0.15, 0, Math.PI * 2);
+                ctx.fillStyle = 'white';
+                ctx.fill();
+            });
+        }
+
+        function drawBigMouth(mouth, size) {
+            ctx.beginPath();
+            ctx.ellipse(mouth.x, mouth.y, size, size * 0.6, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#8B0000';
+            ctx.fill();
+            ctx.strokeStyle = '#ff6b6b';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // Teeth
+            ctx.fillStyle = 'white';
+            for (let i = 0; i < 6; i++) {
+                const tx = mouth.x - size * 0.6 + i * size * 0.24;
+                ctx.fillRect(tx, mouth.y - size * 0.25, size * 0.2, size * 0.35);
+            }
+
+            // Tongue
+            ctx.beginPath();
+            ctx.ellipse(mouth.x, mouth.y + size * 0.3, size * 0.4, size * 0.25, 0, 0, Math.PI);
+            ctx.fillStyle = '#ff6b8a';
+            ctx.fill();
+        }
+
+        function drawBigNose(nose, size) {
+            ctx.beginPath();
+            ctx.ellipse(nose.x, nose.y, size * 0.8, size, 0, 0, Math.PI * 2);
+            const grad = ctx.createRadialGradient(nose.x - size * 0.2, nose.y - size * 0.3, 0, nose.x, nose.y, size);
+            grad.addColorStop(0, '#ffb6a3');
+            grad.addColorStop(1, '#cc6655');
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            // Nostrils
+            ctx.fillStyle = '#4a2020';
+            ctx.beginPath();
+            ctx.ellipse(nose.x - size * 0.25, nose.y + size * 0.3, size * 0.15, size * 0.2, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(nose.x + size * 0.25, nose.y + size * 0.3, size * 0.15, size * 0.2, 0.3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawVampire(mouth, left, right, size) {
+            // Fangs
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.moveTo(mouth.x - size * 0.3, mouth.y - size * 0.1);
+            ctx.lineTo(mouth.x - size * 0.2, mouth.y + size * 0.5);
+            ctx.lineTo(mouth.x - size * 0.1, mouth.y - size * 0.1);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(mouth.x + size * 0.1, mouth.y - size * 0.1);
+            ctx.lineTo(mouth.x + size * 0.2, mouth.y + size * 0.5);
+            ctx.lineTo(mouth.x + size * 0.3, mouth.y - size * 0.1);
+            ctx.fill();
+
+            // Red eyes
+            [left, right].forEach(eye => {
+                ctx.beginPath();
+                ctx.arc(eye.x, eye.y, size * 0.25, 0, Math.PI * 2);
+                const grad = ctx.createRadialGradient(eye.x, eye.y, 0, eye.x, eye.y, size * 0.25);
+                grad.addColorStop(0, '#ff0000');
+                grad.addColorStop(0.5, '#aa0000');
+                grad.addColorStop(1, '#550000');
+                ctx.fillStyle = grad;
+                ctx.fill();
+
+                // Slit pupil
+                ctx.fillStyle = '#000';
+                ctx.fillRect(eye.x - 2, eye.y - size * 0.2, 4, size * 0.4);
+            });
+        }
+
+        function drawCyclops(left, right, size) {
+            const centerX = (left.x + right.x) / 2;
+            const centerY = (left.y + right.y) / 2;
+
+            // Cover original eyes area
+            ctx.fillStyle = ctx.createPattern(canvas, 'repeat');
+
+            // Big single eye
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, size, 0, Math.PI * 2);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 5;
+            ctx.stroke();
+
+            // Iris
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, size * 0.6, 0, Math.PI * 2);
+            const irisGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, size * 0.6);
+            irisGrad.addColorStop(0, '#00aa00');
+            irisGrad.addColorStop(1, '#004400');
+            ctx.fillStyle = irisGrad;
+            ctx.fill();
+
+            // Pupil
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, size * 0.3, 0, Math.PI * 2);
+            ctx.fillStyle = '#000';
+            ctx.fill();
+
+            // Shine
+            ctx.beginPath();
+            ctx.arc(centerX - size * 0.25, centerY - size * 0.25, size * 0.15, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.fill();
+        }
+
+        function drawCartoonFace(left, right, nose, mouth, size) {
+            // Big cartoon eyes
+            [left, right].forEach(eye => {
+                ctx.beginPath();
+                ctx.ellipse(eye.x, eye.y, size * 0.5, size * 0.6, 0, 0, Math.PI * 2);
+                ctx.fillStyle = 'white';
+                ctx.fill();
+                ctx.strokeStyle = '#222';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                // Big pupils
+                ctx.beginPath();
+                ctx.arc(eye.x, eye.y + size * 0.1, size * 0.25, 0, Math.PI * 2);
+                ctx.fillStyle = '#1a5fb4';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(eye.x, eye.y + size * 0.1, size * 0.12, 0, Math.PI * 2);
+                ctx.fillStyle = '#000';
+                ctx.fill();
+
+                // Big shine
+                ctx.beginPath();
+                ctx.arc(eye.x - size * 0.1, eye.y - size * 0.1, size * 0.12, 0, Math.PI * 2);
+                ctx.fillStyle = 'white';
+                ctx.fill();
+            });
+
+            // Blush
+            ctx.beginPath();
+            ctx.ellipse(left.x + size * 0.3, left.y + size * 0.5, size * 0.25, size * 0.15, 0, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 150, 150, 0.5)';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.ellipse(right.x - size * 0.3, right.y + size * 0.5, size * 0.25, size * 0.15, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawZombie(left, right, mouth, size) {
+            // Green tint over face would require mask - instead do zombie features
+
+            // Dead eyes
+            [left, right].forEach(eye => {
+                ctx.beginPath();
+                ctx.arc(eye.x, eye.y, size * 0.35, 0, Math.PI * 2);
+                ctx.fillStyle = '#aaaa77';
+                ctx.fill();
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // X eyes
+                ctx.strokeStyle = '#550000';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(eye.x - size * 0.15, eye.y - size * 0.15);
+                ctx.lineTo(eye.x + size * 0.15, eye.y + size * 0.15);
+                ctx.moveTo(eye.x + size * 0.15, eye.y - size * 0.15);
+                ctx.lineTo(eye.x - size * 0.15, eye.y + size * 0.15);
+                ctx.stroke();
+            });
+
+            // Stitches on mouth
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 3;
+            for (let i = 0; i < 5; i++) {
+                const sx = mouth.x - size * 0.5 + i * size * 0.25;
+                ctx.beginPath();
+                ctx.moveTo(sx, mouth.y - size * 0.15);
+                ctx.lineTo(sx, mouth.y + size * 0.15);
+                ctx.stroke();
+            }
+        }
+
+        function drawOldAge(left, right, mouth, size) {
+            ctx.strokeStyle = '#8B7355';
+            ctx.lineWidth = 2;
+
+            // Wrinkles around eyes
+            [left, right].forEach(eye => {
+                for (let i = 0; i < 4; i++) {
+                    ctx.beginPath();
+                    const angle = (eye.x < canvas.width / 2 ? 0.3 : -0.3) + (i - 1.5) * 0.15;
+                    const startX = eye.x + (eye.x < canvas.width / 2 ? size * 0.4 : -size * 0.4);
+                    ctx.moveTo(startX, eye.y + (i - 1.5) * size * 0.15);
+                    ctx.lineTo(startX + Math.cos(angle) * size * 0.4, eye.y + (i - 1.5) * size * 0.15 + Math.sin(angle) * size * 0.1);
+                    ctx.stroke();
+                }
+            });
+
+            // Forehead wrinkles
+            const midX = (left.x + right.x) / 2;
+            const topY = Math.min(left.y, right.y) - size * 0.6;
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(midX - size * 0.6, topY + i * size * 0.15);
+                ctx.quadraticCurveTo(midX, topY + i * size * 0.15 - 5, midX + size * 0.6, topY + i * size * 0.15);
+                ctx.stroke();
+            }
+
+            // Smile lines
+            ctx.beginPath();
+            ctx.arc(mouth.x - size * 0.5, mouth.y, size * 0.3, -0.5, 0.8);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(mouth.x + size * 0.5, mouth.y, size * 0.3, Math.PI - 0.8, Math.PI + 0.5);
+            ctx.stroke();
+        }
+
+        function drawBeauty(left, right, size) {
+            // Sparkles
+            const time = Date.now() / 500;
+            ctx.fillStyle = '#FFD700';
+
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2 + time;
+                const dist = size * 1.2 + Math.sin(time * 2 + i) * 20;
+                const midX = (left.x + right.x) / 2;
+                const midY = (left.y + right.y) / 2;
+                const x = midX + Math.cos(angle) * dist;
+                const y = midY + Math.sin(angle) * dist * 0.6 - size * 0.3;
+
+                // 4-point star
+                ctx.beginPath();
+                const starSize = 8 + Math.sin(time * 3 + i * 2) * 4;
+                ctx.moveTo(x, y - starSize);
+                ctx.lineTo(x + 2, y);
+                ctx.lineTo(x + starSize, y);
+                ctx.lineTo(x + 2, y);
+                ctx.lineTo(x, y + starSize);
+                ctx.lineTo(x - 2, y);
+                ctx.lineTo(x - starSize, y);
+                ctx.lineTo(x - 2, y);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // Lens flare on eyes
+            [left, right].forEach(eye => {
+                const grad = ctx.createRadialGradient(eye.x, eye.y, 0, eye.x, eye.y, size * 0.4);
+                grad.addColorStop(0, 'rgba(255,255,255,0.6)');
+                grad.addColorStop(1, 'rgba(255,255,255,0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(eye.x, eye.y, size * 0.4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function drawDemon(left, right, topY, size) {
+            // Horns
+            const hornSize = size * 1.2;
+
+            [{ x: left.x + size * 0.3, dir: 1 }, { x: right.x - size * 0.3, dir: -1 }].forEach(horn => {
+                ctx.beginPath();
+                ctx.moveTo(horn.x, topY);
+                ctx.quadraticCurveTo(
+                    horn.x + horn.dir * hornSize * 0.5,
+                    topY - hornSize * 1.2,
+                    horn.x + horn.dir * hornSize * 0.3,
+                    topY - hornSize * 0.4
+                );
+                ctx.quadraticCurveTo(
+                    horn.x + horn.dir * hornSize * 0.1,
+                    topY - hornSize * 0.5,
+                    horn.x,
+                    topY
+                );
+                const hornGrad = ctx.createLinearGradient(horn.x, topY, horn.x, topY - hornSize);
+                hornGrad.addColorStop(0, '#4a0000');
+                hornGrad.addColorStop(1, '#220000');
+                ctx.fillStyle = hornGrad;
+                ctx.fill();
+            });
+
+            // Glowing red eyes
+            [left, right].forEach(eye => {
+                const eyeGrad = ctx.createRadialGradient(eye.x, eye.y, 0, eye.x, eye.y, size * 0.4);
+                eyeGrad.addColorStop(0, '#ffff00');
+                eyeGrad.addColorStop(0.3, '#ff0000');
+                eyeGrad.addColorStop(1, 'rgba(255,0,0,0)');
+                ctx.fillStyle = eyeGrad;
+                ctx.beginPath();
+                ctx.arc(eye.x, eye.y, size * 0.4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Slit
+                ctx.fillStyle = '#000';
+                ctx.fillRect(eye.x - 2, eye.y - size * 0.15, 4, size * 0.3);
+            });
+        }
+
+        function drawAlien(left, right, size) {
+            // Big black almond eyes
+            [left, right].forEach((eye, idx) => {
+                ctx.beginPath();
+                ctx.ellipse(eye.x, eye.y, size * 0.7, size * 1.1, idx === 0 ? 0.3 : -0.3, 0, Math.PI * 2);
+                const alienGrad = ctx.createRadialGradient(eye.x - size * 0.2, eye.y - size * 0.3, 0, eye.x, eye.y, size * 0.8);
+                alienGrad.addColorStop(0, '#333');
+                alienGrad.addColorStop(0.5, '#111');
+                alienGrad.addColorStop(1, '#000');
+                ctx.fillStyle = alienGrad;
+                ctx.fill();
+
+                // Reflection
+                ctx.beginPath();
+                ctx.ellipse(eye.x - size * 0.25, eye.y - size * 0.4, size * 0.15, size * 0.25, idx === 0 ? 0.3 : -0.3, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                ctx.fill();
+            });
+        }
+
+        // === RENDER LOOP ===
         async function renderLoop() {
             if (video.readyState === video.HAVE_ENOUGH_DATA) {
                 // Draw mirrored video
@@ -1820,60 +1729,63 @@
                 ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
                 ctx.restore();
 
-                // Apply pixel effects
+                // Apply distortion effects
                 if (currentEffect !== 'none') {
                     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const processed = applyEffect(imageData);
-                    ctx.putImageData(processed, 0, 0);
+
+                    if (['pixelate', 'thermal', 'neon', 'posterize', 'invert', 'emboss', 'cartoon-filter'].includes(currentEffect)) {
+                        applyColorEffect(imageData);
+                    } else {
+                        applyDistortionEffect(imageData);
+                    }
+
+                    ctx.putImageData(imageData, 0, 0);
                 }
 
-                // Face detection and filters
+                // Face detection
                 if (faceLockEnabled) {
                     await detectFace();
                 }
 
-                if (faceData && currentFaceFilter !== 'face-none') {
-                    drawFaceFilter(faceData.landmarks);
+                // Face effects
+                if (faceData && currentFaceEffect !== 'face-none') {
+                    drawFaceEffects();
                 }
             }
+
             animationId = requestAnimationFrame(renderLoop);
         }
 
-        // Capture photo
+        // === CAPTURE ===
         captureBtn.addEventListener('click', () => {
             flash.classList.add('active');
-            setTimeout(() => flash.classList.remove('active'), 300);
+            setTimeout(() => flash.classList.remove('active'), 250);
 
             const photoCanvas = document.createElement('canvas');
             photoCanvas.width = canvas.width;
             photoCanvas.height = canvas.height;
-            const photoCtx = photoCanvas.getContext('2d');
-            photoCtx.drawImage(canvas, 0, 0);
+            photoCanvas.getContext('2d').drawImage(canvas, 0, 0);
 
-            const dataUrl = photoCanvas.toDataURL('image/png');
-            photos.unshift({ id: Date.now(), data: dataUrl });
-            updatePhotoCount();
-            showToast('Photo captured! 📸');
+            photos.unshift({ id: Date.now(), data: photoCanvas.toDataURL('image/png') });
+            photoCount.textContent = photos.length;
+            showToast('📸 Photo captured!');
         });
 
-        // Gallery functions
-        function updatePhotoCount() {
-            photoCount.textContent = `(${photos.length})`;
-        }
-
+        // === GALLERY ===
         function renderGallery() {
             if (photos.length === 0) {
                 emptyGallery.style.display = 'block';
                 galleryGrid.innerHTML = '';
                 return;
             }
-
             emptyGallery.style.display = 'none';
-            galleryGrid.innerHTML = photos.map(photo => `
-                <div class="gallery-item" data-id="${photo.id}">
-                    <img src="${photo.data}" alt="Photo">
-                    <button class="delete-btn" data-action="delete"><i class="fas fa-trash"></i></button>
-                    <a href="${photo.data}" download="funhouse-${photo.id}.png" class="save-btn"><i class="fas fa-download"></i></a>
+            galleryGrid.innerHTML = photos.map(p => `
+                <div class="gallery-item" data-id="${p.id}">
+                    <img src="${p.data}" alt="Photo">
+                    <div class="actions">
+                        <a href="${p.data}" download="funhouse-${p.id}.png" class="action-btn"><i class="fas fa-download"></i></a>
+                        <button class="action-btn delete" data-action="delete"><i class="fas fa-trash"></i></button>
+                    </div>
                 </div>
             `).join('');
         }
@@ -1887,46 +1799,41 @@
             galleryModal.classList.remove('open');
         });
 
-        galleryGrid.addEventListener('click', (e) => {
+        galleryGrid.addEventListener('click', e => {
             const item = e.target.closest('.gallery-item');
             if (!item) return;
 
-            if (e.target.closest('.delete-btn')) {
-                const id = parseInt(item.dataset.id);
-                photos = photos.filter(p => p.id !== id);
-                updatePhotoCount();
+            if (e.target.closest('[data-action="delete"]')) {
+                photos = photos.filter(p => p.id !== parseInt(item.dataset.id));
+                photoCount.textContent = photos.length;
                 renderGallery();
-                showToast('Photo deleted');
+                showToast('🗑️ Photo deleted');
                 return;
             }
 
-            if (e.target.closest('.save-btn')) {
-                showToast('Downloading photo...');
-                return;
+            if (!e.target.closest('a')) {
+                lightboxImg.src = item.querySelector('img').src;
+                lightbox.classList.add('open');
             }
-
-            const img = item.querySelector('img');
-            lightboxImg.src = img.src;
-            lightbox.classList.add('open');
         });
 
         document.getElementById('closeLightbox').addEventListener('click', () => {
             lightbox.classList.remove('open');
         });
 
-        lightbox.addEventListener('click', (e) => {
+        lightbox.addEventListener('click', e => {
             if (e.target === lightbox) lightbox.classList.remove('open');
         });
 
-        // Toast
-        function showToast(message) {
-            toast.textContent = message;
+        // === TOAST ===
+        function showToast(msg) {
+            toast.textContent = msg;
             toast.classList.add('show');
             setTimeout(() => toast.classList.remove('show'), 2000);
         }
 
-        // Initialize
-        initEffects();
+        // === INIT ===
+        initEffectsUI();
         initCamera();
     </script>
 </body>
