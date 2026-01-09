@@ -6,6 +6,7 @@
     <title>Funhouse Camera</title>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.min.js"></script>
     <style>
         :root {
             --primary: #ff3366;
@@ -143,6 +144,42 @@
             50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.5; }
         }
 
+        .face-indicator {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.6);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .face-indicator.visible {
+            opacity: 1;
+        }
+
+        .face-indicator .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff4444;
+        }
+
+        .face-indicator.detected .dot {
+            background: #44ff44;
+            animation: pulse-dot 1s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+        }
+
         .no-camera {
             position: absolute;
             top: 50%;
@@ -158,11 +195,44 @@
             opacity: 0.5;
         }
 
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            z-index: 10;
+        }
+
+        .loading-overlay.hidden {
+            display: none;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255,255,255,0.2);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         .controls {
             display: flex;
             gap: 15px;
             justify-content: center;
             flex-wrap: wrap;
+            align-items: center;
         }
 
         .btn {
@@ -204,10 +274,96 @@
             transform: scale(1.05);
         }
 
+        /* Face Lock Toggle */
+        .face-lock-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.1);
+            padding: 8px 16px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            user-select: none;
+        }
+
+        .face-lock-toggle:hover {
+            background: rgba(255,255,255,0.15);
+        }
+
+        .face-lock-toggle.active {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            box-shadow: 0 4px 15px rgba(155, 89, 182, 0.4);
+        }
+
+        .toggle-switch {
+            width: 40px;
+            height: 22px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 11px;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .face-lock-toggle.active .toggle-switch {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s;
+        }
+
+        .face-lock-toggle.active .toggle-switch::after {
+            left: 20px;
+        }
+
+        .toggle-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
         .effects-section {
             padding: 15px;
             background: var(--bg-card);
             border-radius: 20px 20px 0 0;
+        }
+
+        .effects-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-family: 'Fredoka One', cursive;
+            font-size: 0.95rem;
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 20px;
+            transition: all 0.3s;
+        }
+
+        .tab-btn:hover {
+            color: white;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .tab-btn.active {
+            color: var(--accent);
+            background: rgba(255, 204, 0, 0.15);
         }
 
         .effects-header {
@@ -263,6 +419,7 @@
             flex-direction: column;
             align-items: center;
             gap: 5px;
+            color: white;
         }
 
         .effect-btn:hover {
@@ -284,6 +441,18 @@
             font-size: 0.7rem;
             text-align: center;
             line-height: 1.2;
+        }
+
+        .effect-btn .emoji {
+            font-size: 1.5rem;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
         }
 
         /* Flash effect */
@@ -505,6 +674,10 @@
             .effect-btn { padding: 8px 5px; }
             .effect-btn i { font-size: 1.1rem; }
             .effect-btn span { font-size: 0.6rem; }
+            .controls { gap: 8px; }
+            .btn { padding: 10px 16px; font-size: 14px; }
+            .face-lock-toggle { padding: 6px 12px; }
+            .toggle-label { font-size: 0.75rem; }
         }
 
         .dark body { background: var(--bg-dark); }
@@ -521,7 +694,15 @@
                 <video id="video" autoplay playsinline muted></video>
                 <canvas id="canvas"></canvas>
                 <div class="effect-cursor" id="effectCursor"></div>
-                <div class="no-camera" id="noCamera">
+                <div class="face-indicator" id="faceIndicator">
+                    <span class="dot"></span>
+                    <span class="status">No face</span>
+                </div>
+                <div class="loading-overlay" id="loadingOverlay">
+                    <div class="spinner"></div>
+                    <p>Loading face detection...</p>
+                </div>
+                <div class="no-camera" id="noCamera" style="display: none;">
                     <i class="fas fa-video-slash"></i>
                     <p>Camera not available</p>
                     <p style="font-size: 0.9rem; margin-top: 10px;">Please allow camera access</p>
@@ -532,18 +713,44 @@
                 <button class="btn btn-capture" id="captureBtn">
                     <i class="fas fa-camera"></i> Snap!
                 </button>
+                <div class="face-lock-toggle" id="faceLockToggle">
+                    <i class="fas fa-crosshairs"></i>
+                    <span class="toggle-label">Lock to Face</span>
+                    <div class="toggle-switch"></div>
+                </div>
                 <button class="btn btn-gallery" id="galleryBtn">
-                    <i class="fas fa-images"></i> Gallery <span id="photoCount">(0)</span>
+                    <i class="fas fa-images"></i> <span id="photoCount">(0)</span>
                 </button>
             </div>
         </section>
 
         <section class="effects-section">
-            <div class="effects-header">
-                <span class="effects-title"><i class="fas fa-magic"></i> Effects</span>
-                <span class="effect-info">Tap camera to move effect</span>
+            <div class="effects-tabs">
+                <button class="tab-btn active" data-tab="distortion"><i class="fas fa-magic"></i> Distortion</button>
+                <button class="tab-btn" data-tab="filters"><i class="fas fa-palette"></i> Filters</button>
+                <button class="tab-btn" data-tab="face"><i class="fas fa-smile"></i> Face</button>
             </div>
-            <div class="effects-grid" id="effectsGrid"></div>
+
+            <div class="tab-content active" id="distortion-tab">
+                <div class="effects-header">
+                    <span class="effect-info">Tap camera to move effect center</span>
+                </div>
+                <div class="effects-grid" id="distortionGrid"></div>
+            </div>
+
+            <div class="tab-content" id="filters-tab">
+                <div class="effects-header">
+                    <span class="effect-info">Color & style filters</span>
+                </div>
+                <div class="effects-grid" id="filtersGrid"></div>
+            </div>
+
+            <div class="tab-content" id="face-tab">
+                <div class="effects-header">
+                    <span class="effect-info">Enable "Lock to Face" for best results</span>
+                </div>
+                <div class="effects-grid" id="faceGrid"></div>
+            </div>
         </section>
     </div>
 
@@ -579,7 +786,7 @@
         });
 
         // Effects configuration
-        const effects = [
+        const distortionEffects = [
             { id: 'none', name: 'Normal', icon: 'fa-circle', movable: false },
             { id: 'stretch', name: 'Stretch', icon: 'fa-arrows-alt-h', movable: true },
             { id: 'squeeze', name: 'Squeeze', icon: 'fa-compress-alt', movable: true },
@@ -590,24 +797,50 @@
             { id: 'mirror-h', name: 'Mirror H', icon: 'fa-arrows-alt-h', movable: false },
             { id: 'mirror-v', name: 'Mirror V', icon: 'fa-arrows-alt-v', movable: false },
             { id: 'kaleidoscope', name: 'Kaleidoscope', icon: 'fa-snowflake', movable: false },
-            { id: 'pixelate', name: 'Pixelate', icon: 'fa-th', movable: false },
-            { id: 'rgbsplit', name: 'RGB Split', icon: 'fa-palette', movable: false },
-            { id: 'wave', name: 'Wave', icon: 'fa-water', movable: false },
-            { id: 'thermal', name: 'Thermal', icon: 'fa-temperature-high', movable: false },
-            { id: 'comic', name: 'Pop Art', icon: 'fa-mask', movable: false },
-            { id: 'glitch', name: 'Glitch', icon: 'fa-bolt', movable: false },
-            { id: 'vintage', name: 'Vintage', icon: 'fa-film', movable: false },
-            { id: 'invert', name: 'Negative', icon: 'fa-adjust', movable: false },
-            { id: 'emboss', name: 'Emboss', icon: 'fa-stamp', movable: false },
-            { id: 'posterize', name: 'Posterize', icon: 'fa-layer-group', movable: false }
+            { id: 'wave', name: 'Wave', icon: 'fa-water', movable: false }
+        ];
+
+        const filterEffects = [
+            { id: 'pixelate', name: 'Pixelate', icon: 'fa-th' },
+            { id: 'rgbsplit', name: 'RGB Split', icon: 'fa-palette' },
+            { id: 'thermal', name: 'Thermal', icon: 'fa-temperature-high' },
+            { id: 'comic', name: 'Pop Art', icon: 'fa-mask' },
+            { id: 'glitch', name: 'Glitch', icon: 'fa-bolt' },
+            { id: 'vintage', name: 'Vintage', icon: 'fa-film' },
+            { id: 'invert', name: 'Negative', icon: 'fa-adjust' },
+            { id: 'emboss', name: 'Emboss', icon: 'fa-stamp' },
+            { id: 'posterize', name: 'Posterize', icon: 'fa-layer-group' }
+        ];
+
+        const faceFilters = [
+            { id: 'face-none', name: 'None', emoji: '😐' },
+            { id: 'sunglasses', name: 'Sunglasses', emoji: '😎' },
+            { id: 'hearts', name: 'Heart Eyes', emoji: '😍' },
+            { id: 'stars', name: 'Star Eyes', emoji: '🤩' },
+            { id: 'cat', name: 'Cat', emoji: '😺' },
+            { id: 'dog', name: 'Dog', emoji: '🐶' },
+            { id: 'crown', name: 'Crown', emoji: '👑' },
+            { id: 'devil', name: 'Devil', emoji: '😈' },
+            { id: 'angel', name: 'Angel', emoji: '😇' },
+            { id: 'clown', name: 'Clown', emoji: '🤡' },
+            { id: 'mustache', name: 'Mustache', emoji: '🥸' },
+            { id: 'nerd', name: 'Nerd', emoji: '🤓' },
+            { id: 'alien', name: 'Alien', emoji: '👽' },
+            { id: 'robot', name: 'Robot', emoji: '🤖' },
+            { id: 'pirate', name: 'Pirate', emoji: '🏴‍☠️' }
         ];
 
         // App state
         let currentEffect = 'none';
+        let currentFaceFilter = 'face-none';
         let effectX = 0.5;
         let effectY = 0.5;
         let photos = [];
         let animationId = null;
+        let faceLockEnabled = false;
+        let faceDetected = false;
+        let faceData = null;
+        let modelsLoaded = false;
 
         // DOM elements
         const video = document.getElementById('video');
@@ -615,10 +848,12 @@
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         const cameraContainer = document.getElementById('cameraContainer');
         const effectCursor = document.getElementById('effectCursor');
+        const faceIndicator = document.getElementById('faceIndicator');
+        const loadingOverlay = document.getElementById('loadingOverlay');
         const noCamera = document.getElementById('noCamera');
-        const effectsGrid = document.getElementById('effectsGrid');
         const captureBtn = document.getElementById('captureBtn');
         const galleryBtn = document.getElementById('galleryBtn');
+        const faceLockToggle = document.getElementById('faceLockToggle');
         const flash = document.getElementById('flash');
         const galleryModal = document.getElementById('galleryModal');
         const galleryGrid = document.getElementById('galleryGrid');
@@ -628,28 +863,83 @@
         const toast = document.getElementById('toast');
         const photoCount = document.getElementById('photoCount');
 
-        // Initialize effects grid
+        // Initialize effects grids
         function initEffects() {
-            effectsGrid.innerHTML = effects.map(effect => `
+            document.getElementById('distortionGrid').innerHTML = distortionEffects.map(effect => `
                 <button class="effect-btn ${effect.id === 'none' ? 'active' : ''}"
-                        data-effect="${effect.id}"
+                        data-effect="${effect.id}" data-type="distortion"
                         data-movable="${effect.movable}">
                     <i class="fas ${effect.icon}"></i>
                     <span>${effect.name}</span>
                 </button>
             `).join('');
 
-            effectsGrid.addEventListener('click', (e) => {
-                const btn = e.target.closest('.effect-btn');
-                if (!btn) return;
+            document.getElementById('filtersGrid').innerHTML = filterEffects.map(effect => `
+                <button class="effect-btn" data-effect="${effect.id}" data-type="filter">
+                    <i class="fas ${effect.icon}"></i>
+                    <span>${effect.name}</span>
+                </button>
+            `).join('');
 
-                document.querySelectorAll('.effect-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentEffect = btn.dataset.effect;
+            document.getElementById('faceGrid').innerHTML = faceFilters.map(filter => `
+                <button class="effect-btn ${filter.id === 'face-none' ? 'active' : ''}"
+                        data-effect="${filter.id}" data-type="face">
+                    <span class="emoji">${filter.emoji}</span>
+                    <span>${filter.name}</span>
+                </button>
+            `).join('');
 
-                const isMovable = btn.dataset.movable === 'true';
-                effectCursor.classList.toggle('visible', isMovable && currentEffect !== 'none');
+            // Effect selection handlers
+            document.querySelectorAll('.effects-grid').forEach(grid => {
+                grid.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.effect-btn');
+                    if (!btn) return;
+
+                    const type = btn.dataset.type;
+                    const effectId = btn.dataset.effect;
+
+                    if (type === 'face') {
+                        document.querySelectorAll('#faceGrid .effect-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        currentFaceFilter = effectId;
+                    } else {
+                        document.querySelectorAll('#distortionGrid .effect-btn, #filtersGrid .effect-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        currentEffect = effectId;
+
+                        const isMovable = btn.dataset.movable === 'true';
+                        effectCursor.classList.toggle('visible', isMovable && !faceLockEnabled);
+                    }
+                });
             });
+
+            // Tab switching
+            document.querySelectorAll('.tab-btn').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.getElementById(`${tab.dataset.tab}-tab`).classList.add('active');
+                });
+            });
+        }
+
+        // Load face-api models
+        async function loadFaceModels() {
+            const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model';
+            try {
+                await Promise.all([
+                    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+                    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL)
+                ]);
+                modelsLoaded = true;
+                loadingOverlay.classList.add('hidden');
+                console.log('Face detection models loaded');
+            } catch (err) {
+                console.log('Error loading face models:', JSON.stringify(err));
+                loadingOverlay.innerHTML = '<p>Face detection unavailable</p>';
+                setTimeout(() => loadingOverlay.classList.add('hidden'), 2000);
+            }
         }
 
         // Camera initialization
@@ -665,17 +955,69 @@
                 video.onloadedmetadata = () => {
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
+                    loadFaceModels();
                     renderLoop();
                 };
             } catch (err) {
                 console.log('Camera error:', JSON.stringify(err));
                 noCamera.style.display = 'block';
+                loadingOverlay.classList.add('hidden');
             }
         }
 
+        // Face detection
+        let lastFaceDetection = 0;
+        async function detectFace() {
+            if (!modelsLoaded || !faceLockEnabled) return;
+
+            const now = Date.now();
+            if (now - lastFaceDetection < 100) return; // Limit to 10fps for detection
+            lastFaceDetection = now;
+
+            try {
+                const detections = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+                    .withFaceLandmarks();
+
+                if (detections) {
+                    faceDetected = true;
+                    faceData = detections;
+
+                    // Update effect position to face center
+                    const box = detections.detection.box;
+                    effectX = 1 - (box.x + box.width / 2) / video.videoWidth;
+                    effectY = (box.y + box.height / 2) / video.videoHeight;
+
+                    faceIndicator.classList.add('detected');
+                    faceIndicator.querySelector('.status').textContent = 'Face locked';
+                } else {
+                    faceDetected = false;
+                    faceData = null;
+                    faceIndicator.classList.remove('detected');
+                    faceIndicator.querySelector('.status').textContent = 'No face';
+                }
+            } catch (err) {
+                console.log('Face detection error');
+            }
+        }
+
+        // Face lock toggle
+        faceLockToggle.addEventListener('click', () => {
+            faceLockEnabled = !faceLockEnabled;
+            faceLockToggle.classList.toggle('active', faceLockEnabled);
+            faceIndicator.classList.toggle('visible', faceLockEnabled);
+
+            if (!faceLockEnabled) {
+                faceDetected = false;
+                faceData = null;
+                effectCursor.classList.remove('visible');
+            }
+        });
+
         // Effect position handling
         function handleEffectPosition(e) {
-            const effect = effects.find(ef => ef.id === currentEffect);
+            if (faceLockEnabled) return;
+
+            const effect = distortionEffects.find(ef => ef.id === currentEffect);
             if (!effect || !effect.movable) return;
 
             const rect = cameraContainer.getBoundingClientRect();
@@ -698,6 +1040,533 @@
 
         cameraContainer.addEventListener('click', handleEffectPosition);
         cameraContainer.addEventListener('touchstart', handleEffectPosition);
+
+        // Draw face filters
+        function drawFaceFilter(landmarks) {
+            if (!landmarks || currentFaceFilter === 'face-none') return;
+
+            const positions = landmarks.positions;
+            const leftEye = landmarks.getLeftEye();
+            const rightEye = landmarks.getRightEye();
+            const nose = landmarks.getNose();
+            const mouth = landmarks.getMouth();
+            const jaw = landmarks.getJawOutline();
+
+            // Calculate face metrics
+            const eyeCenter = (pt) => ({
+                x: pt.reduce((a, p) => a + p.x, 0) / pt.length,
+                y: pt.reduce((a, p) => a + p.y, 0) / pt.length
+            });
+
+            const leftEyeCenter = eyeCenter(leftEye);
+            const rightEyeCenter = eyeCenter(rightEye);
+            const eyeDistance = Math.sqrt(
+                Math.pow(rightEyeCenter.x - leftEyeCenter.x, 2) +
+                Math.pow(rightEyeCenter.y - leftEyeCenter.y, 2)
+            );
+
+            const noseTop = nose[0];
+            const noseTip = nose[3];
+            const mouthCenter = {
+                x: mouth.reduce((a, p) => a + p.x, 0) / mouth.length,
+                y: mouth.reduce((a, p) => a + p.y, 0) / mouth.length
+            };
+
+            // Mirror x coordinates
+            const mirrorX = (x) => canvas.width - x;
+
+            ctx.save();
+
+            switch (currentFaceFilter) {
+                case 'sunglasses':
+                    drawSunglasses(mirrorX(leftEyeCenter.x), leftEyeCenter.y, mirrorX(rightEyeCenter.x), rightEyeCenter.y, eyeDistance);
+                    break;
+                case 'hearts':
+                    drawHearts(mirrorX(leftEyeCenter.x), leftEyeCenter.y, mirrorX(rightEyeCenter.x), rightEyeCenter.y, eyeDistance * 0.5);
+                    break;
+                case 'stars':
+                    drawStars(mirrorX(leftEyeCenter.x), leftEyeCenter.y, mirrorX(rightEyeCenter.x), rightEyeCenter.y, eyeDistance * 0.4);
+                    break;
+                case 'cat':
+                    drawCatEars(mirrorX(positions[0].x), positions[0].y, mirrorX(positions[16].x), positions[16].y, eyeDistance);
+                    drawCatNose(mirrorX(noseTip.x), noseTip.y, eyeDistance * 0.3);
+                    drawWhiskers(mirrorX(noseTip.x), noseTip.y, eyeDistance);
+                    break;
+                case 'dog':
+                    drawDogEars(mirrorX(positions[0].x), positions[0].y, mirrorX(positions[16].x), positions[16].y, eyeDistance);
+                    drawDogNose(mirrorX(noseTip.x), noseTip.y, eyeDistance * 0.4);
+                    drawDogTongue(mirrorX(mouthCenter.x), mouthCenter.y + eyeDistance * 0.3, eyeDistance * 0.3);
+                    break;
+                case 'crown':
+                    drawCrown(mirrorX((leftEyeCenter.x + rightEyeCenter.x) / 2), positions[24].y - eyeDistance * 0.8, eyeDistance * 1.5);
+                    break;
+                case 'devil':
+                    drawDevilHorns(mirrorX(positions[0].x), positions[0].y, mirrorX(positions[16].x), positions[16].y, eyeDistance);
+                    break;
+                case 'angel':
+                    drawHalo(mirrorX((leftEyeCenter.x + rightEyeCenter.x) / 2), positions[24].y - eyeDistance * 0.6, eyeDistance * 0.8);
+                    break;
+                case 'clown':
+                    drawClownNose(mirrorX(noseTip.x), noseTip.y, eyeDistance * 0.25);
+                    drawClownMakeup(mirrorX(leftEyeCenter.x), leftEyeCenter.y, mirrorX(rightEyeCenter.x), rightEyeCenter.y, eyeDistance * 0.3);
+                    break;
+                case 'mustache':
+                    drawMustache(mirrorX(noseTip.x), noseTip.y + eyeDistance * 0.15, eyeDistance * 0.8);
+                    break;
+                case 'nerd':
+                    drawNerdGlasses(mirrorX(leftEyeCenter.x), leftEyeCenter.y, mirrorX(rightEyeCenter.x), rightEyeCenter.y, eyeDistance);
+                    break;
+                case 'alien':
+                    drawAlienEyes(mirrorX(leftEyeCenter.x), leftEyeCenter.y, mirrorX(rightEyeCenter.x), rightEyeCenter.y, eyeDistance * 0.6);
+                    break;
+                case 'robot':
+                    drawRobotFace(mirrorX(leftEyeCenter.x), leftEyeCenter.y, mirrorX(rightEyeCenter.x), rightEyeCenter.y, eyeDistance);
+                    break;
+                case 'pirate':
+                    drawEyepatch(mirrorX(leftEyeCenter.x), leftEyeCenter.y, eyeDistance * 0.5);
+                    drawPirateHat(mirrorX((leftEyeCenter.x + rightEyeCenter.x) / 2), positions[24].y - eyeDistance * 0.5, eyeDistance * 1.5);
+                    break;
+            }
+
+            ctx.restore();
+        }
+
+        // Face filter drawing functions
+        function drawSunglasses(lx, ly, rx, ry, size) {
+            const gradient = ctx.createLinearGradient(rx, ly - size/2, lx, ly + size/2);
+            gradient.addColorStop(0, '#1a1a1a');
+            gradient.addColorStop(1, '#333');
+
+            // Left lens
+            ctx.beginPath();
+            ctx.ellipse(lx, ly, size * 0.45, size * 0.35, 0, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Right lens
+            ctx.beginPath();
+            ctx.ellipse(rx, ry, size * 0.45, size * 0.35, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Bridge
+            ctx.beginPath();
+            ctx.moveTo(lx - size * 0.4, ly);
+            ctx.lineTo(rx + size * 0.4, ry);
+            ctx.stroke();
+
+            // Shine
+            ctx.beginPath();
+            ctx.ellipse(lx - size * 0.15, ly - size * 0.1, size * 0.1, size * 0.05, -0.3, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.fill();
+        }
+
+        function drawHearts(lx, ly, rx, ry, size) {
+            function heart(x, y, s) {
+                ctx.beginPath();
+                ctx.moveTo(x, y + s * 0.3);
+                ctx.bezierCurveTo(x, y, x - s, y, x - s, y + s * 0.3);
+                ctx.bezierCurveTo(x - s, y + s * 0.6, x, y + s, x, y + s);
+                ctx.bezierCurveTo(x, y + s, x + s, y + s * 0.6, x + s, y + s * 0.3);
+                ctx.bezierCurveTo(x + s, y, x, y, x, y + s * 0.3);
+                ctx.fillStyle = '#ff1493';
+                ctx.fill();
+            }
+            heart(lx, ly - size * 0.5, size);
+            heart(rx, ry - size * 0.5, size);
+        }
+
+        function drawStars(lx, ly, rx, ry, size) {
+            function star(x, y, s) {
+                ctx.beginPath();
+                for (let i = 0; i < 5; i++) {
+                    const angle = (i * 4 * Math.PI) / 5 - Math.PI / 2;
+                    const px = x + Math.cos(angle) * s;
+                    const py = y + Math.sin(angle) * s;
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.closePath();
+                ctx.fillStyle = '#ffd700';
+                ctx.fill();
+                ctx.strokeStyle = '#ff8c00';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+            star(lx, ly, size);
+            star(rx, ry, size);
+        }
+
+        function drawCatEars(lx, ly, rx, ry, size) {
+            // Left ear
+            ctx.beginPath();
+            ctx.moveTo(lx + size * 0.3, ly);
+            ctx.lineTo(lx + size * 0.1, ly - size * 0.8);
+            ctx.lineTo(lx - size * 0.3, ly - size * 0.2);
+            ctx.closePath();
+            ctx.fillStyle = '#ff9999';
+            ctx.fill();
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Right ear
+            ctx.beginPath();
+            ctx.moveTo(rx - size * 0.3, ry);
+            ctx.lineTo(rx - size * 0.1, ry - size * 0.8);
+            ctx.lineTo(rx + size * 0.3, ry - size * 0.2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Inner ears
+            ctx.fillStyle = '#ffcccc';
+            ctx.beginPath();
+            ctx.moveTo(lx + size * 0.2, ly - size * 0.1);
+            ctx.lineTo(lx + size * 0.1, ly - size * 0.5);
+            ctx.lineTo(lx - size * 0.1, ly - size * 0.15);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(rx - size * 0.2, ry - size * 0.1);
+            ctx.lineTo(rx - size * 0.1, ry - size * 0.5);
+            ctx.lineTo(rx + size * 0.1, ry - size * 0.15);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawCatNose(x, y, size) {
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x - size * 0.4, y - size * 0.5);
+            ctx.lineTo(x + size * 0.4, y - size * 0.5);
+            ctx.closePath();
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fill();
+        }
+
+        function drawWhiskers(x, y, size) {
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+
+            // Left whiskers
+            for (let i = -1; i <= 1; i++) {
+                ctx.beginPath();
+                ctx.moveTo(x + size * 0.2, y + i * size * 0.1);
+                ctx.lineTo(x + size * 0.8, y + i * size * 0.15);
+                ctx.stroke();
+            }
+
+            // Right whiskers
+            for (let i = -1; i <= 1; i++) {
+                ctx.beginPath();
+                ctx.moveTo(x - size * 0.2, y + i * size * 0.1);
+                ctx.lineTo(x - size * 0.8, y + i * size * 0.15);
+                ctx.stroke();
+            }
+        }
+
+        function drawDogEars(lx, ly, rx, ry, size) {
+            // Left floppy ear
+            ctx.beginPath();
+            ctx.ellipse(lx + size * 0.2, ly + size * 0.3, size * 0.35, size * 0.6, 0.3, 0, Math.PI * 2);
+            ctx.fillStyle = '#8B4513';
+            ctx.fill();
+            ctx.strokeStyle = '#5D3A1A';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Right floppy ear
+            ctx.beginPath();
+            ctx.ellipse(rx - size * 0.2, ry + size * 0.3, size * 0.35, size * 0.6, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        function drawDogNose(x, y, size) {
+            ctx.beginPath();
+            ctx.ellipse(x, y, size, size * 0.7, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fill();
+
+            // Shine
+            ctx.beginPath();
+            ctx.ellipse(x - size * 0.3, y - size * 0.2, size * 0.2, size * 0.15, 0, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.fill();
+        }
+
+        function drawDogTongue(x, y, size) {
+            ctx.beginPath();
+            ctx.ellipse(x, y + size * 0.5, size * 0.5, size, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff6b8a';
+            ctx.fill();
+            ctx.strokeStyle = '#cc5577';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Center line
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, y + size * 1.2);
+            ctx.stroke();
+        }
+
+        function drawCrown(x, y, size) {
+            ctx.beginPath();
+            ctx.moveTo(x - size * 0.5, y + size * 0.4);
+            ctx.lineTo(x - size * 0.5, y);
+            ctx.lineTo(x - size * 0.25, y + size * 0.2);
+            ctx.lineTo(x, y - size * 0.2);
+            ctx.lineTo(x + size * 0.25, y + size * 0.2);
+            ctx.lineTo(x + size * 0.5, y);
+            ctx.lineTo(x + size * 0.5, y + size * 0.4);
+            ctx.closePath();
+
+            const gradient = ctx.createLinearGradient(x, y - size * 0.2, x, y + size * 0.4);
+            gradient.addColorStop(0, '#ffd700');
+            gradient.addColorStop(1, '#ff8c00');
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            ctx.strokeStyle = '#b8860b';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Jewels
+            ctx.beginPath();
+            ctx.arc(x, y, size * 0.08, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff0000';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(x - size * 0.35, y + size * 0.15, size * 0.06, 0, Math.PI * 2);
+            ctx.fillStyle = '#00ff00';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(x + size * 0.35, y + size * 0.15, size * 0.06, 0, Math.PI * 2);
+            ctx.fillStyle = '#0000ff';
+            ctx.fill();
+        }
+
+        function drawDevilHorns(lx, ly, rx, ry, size) {
+            // Left horn
+            ctx.beginPath();
+            ctx.moveTo(lx + size * 0.2, ly - size * 0.1);
+            ctx.quadraticCurveTo(lx + size * 0.3, ly - size * 0.8, lx, ly - size * 0.9);
+            ctx.quadraticCurveTo(lx + size * 0.1, ly - size * 0.5, lx + size * 0.05, ly - size * 0.1);
+            ctx.closePath();
+
+            const gradientL = ctx.createLinearGradient(lx, ly - size, lx, ly);
+            gradientL.addColorStop(0, '#8B0000');
+            gradientL.addColorStop(1, '#ff0000');
+            ctx.fillStyle = gradientL;
+            ctx.fill();
+
+            // Right horn
+            ctx.beginPath();
+            ctx.moveTo(rx - size * 0.2, ry - size * 0.1);
+            ctx.quadraticCurveTo(rx - size * 0.3, ry - size * 0.8, rx, ry - size * 0.9);
+            ctx.quadraticCurveTo(rx - size * 0.1, ry - size * 0.5, rx - size * 0.05, ry - size * 0.1);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawHalo(x, y, size) {
+            ctx.beginPath();
+            ctx.ellipse(x, y, size, size * 0.25, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = size * 0.15;
+            ctx.stroke();
+
+            // Glow
+            ctx.shadowColor = '#ffd700';
+            ctx.shadowBlur = 20;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        function drawClownNose(x, y, size) {
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            const gradient = ctx.createRadialGradient(x - size * 0.3, y - size * 0.3, 0, x, y, size);
+            gradient.addColorStop(0, '#ff4444');
+            gradient.addColorStop(1, '#cc0000');
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Shine
+            ctx.beginPath();
+            ctx.ellipse(x - size * 0.3, y - size * 0.3, size * 0.2, size * 0.15, -0.5, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.fill();
+        }
+
+        function drawClownMakeup(lx, ly, rx, ry, size) {
+            // Left eye makeup
+            ctx.beginPath();
+            ctx.arc(lx, ly, size, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 150, 255, 0.5)';
+            ctx.fill();
+
+            // Right eye makeup
+            ctx.beginPath();
+            ctx.arc(rx, ry, size, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 150, 0, 0.5)';
+            ctx.fill();
+        }
+
+        function drawMustache(x, y, size) {
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.bezierCurveTo(x + size * 0.3, y - size * 0.3, x + size * 0.6, y - size * 0.2, x + size * 0.6, y + size * 0.1);
+            ctx.bezierCurveTo(x + size * 0.4, y, x + size * 0.2, y + size * 0.1, x, y + size * 0.05);
+            ctx.bezierCurveTo(x - size * 0.2, y + size * 0.1, x - size * 0.4, y, x - size * 0.6, y + size * 0.1);
+            ctx.bezierCurveTo(x - size * 0.6, y - size * 0.2, x - size * 0.3, y - size * 0.3, x, y);
+            ctx.fillStyle = '#2c1810';
+            ctx.fill();
+        }
+
+        function drawNerdGlasses(lx, ly, rx, ry, size) {
+            ctx.strokeStyle = '#1a1a1a';
+            ctx.lineWidth = 4;
+
+            // Left frame
+            ctx.beginPath();
+            ctx.rect(lx - size * 0.4, ly - size * 0.3, size * 0.8, size * 0.6);
+            ctx.stroke();
+            ctx.fillStyle = 'rgba(255,255,255,0.2)';
+            ctx.fill();
+
+            // Right frame
+            ctx.beginPath();
+            ctx.rect(rx - size * 0.4, ry - size * 0.3, size * 0.8, size * 0.6);
+            ctx.stroke();
+            ctx.fill();
+
+            // Bridge
+            ctx.beginPath();
+            ctx.moveTo(lx - size * 0.4, ly);
+            ctx.lineTo(rx + size * 0.4, ry);
+            ctx.stroke();
+
+            // Tape on bridge
+            ctx.fillStyle = '#f5f5dc';
+            ctx.fillRect((lx + rx) / 2 - size * 0.1, (ly + ry) / 2 - size * 0.08, size * 0.2, size * 0.16);
+        }
+
+        function drawAlienEyes(lx, ly, rx, ry, size) {
+            // Left eye
+            ctx.beginPath();
+            ctx.ellipse(lx, ly, size * 0.8, size * 1.2, 0.2, 0, Math.PI * 2);
+            const gradientL = ctx.createRadialGradient(lx, ly, 0, lx, ly, size);
+            gradientL.addColorStop(0, '#000');
+            gradientL.addColorStop(0.5, '#004400');
+            gradientL.addColorStop(1, '#00ff00');
+            ctx.fillStyle = gradientL;
+            ctx.fill();
+
+            // Right eye
+            ctx.beginPath();
+            ctx.ellipse(rx, ry, size * 0.8, size * 1.2, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawRobotFace(lx, ly, rx, ry, size) {
+            // Left eye
+            ctx.beginPath();
+            ctx.rect(lx - size * 0.35, ly - size * 0.25, size * 0.7, size * 0.5);
+            ctx.fillStyle = '#333';
+            ctx.fill();
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(lx, ly, size * 0.15, 0, Math.PI * 2);
+            ctx.fillStyle = '#00ff00';
+            ctx.fill();
+
+            // Right eye
+            ctx.beginPath();
+            ctx.rect(rx - size * 0.35, ry - size * 0.25, size * 0.7, size * 0.5);
+            ctx.fillStyle = '#333';
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(rx, ry, size * 0.15, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff0000';
+            ctx.fill();
+
+            // Antenna
+            const midX = (lx + rx) / 2;
+            const midY = Math.min(ly, ry) - size * 0.8;
+            ctx.beginPath();
+            ctx.moveTo(midX, midY + size * 0.5);
+            ctx.lineTo(midX, midY);
+            ctx.strokeStyle = '#888';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(midX, midY, size * 0.12, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff0000';
+            ctx.fill();
+        }
+
+        function drawEyepatch(x, y, size) {
+            ctx.beginPath();
+            ctx.ellipse(x, y, size, size * 0.7, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fill();
+
+            // Strap
+            ctx.beginPath();
+            ctx.moveTo(x - size, y);
+            ctx.lineTo(x - size * 3, y - size * 0.5);
+            ctx.moveTo(x + size, y);
+            ctx.lineTo(x + size * 3, y - size * 0.5);
+            ctx.strokeStyle = '#1a1a1a';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+        }
+
+        function drawPirateHat(x, y, size) {
+            // Hat base
+            ctx.beginPath();
+            ctx.ellipse(x, y + size * 0.3, size * 0.8, size * 0.15, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fill();
+
+            // Hat top
+            ctx.beginPath();
+            ctx.moveTo(x - size * 0.7, y + size * 0.3);
+            ctx.quadraticCurveTo(x - size * 0.5, y - size * 0.3, x, y - size * 0.1);
+            ctx.quadraticCurveTo(x + size * 0.5, y - size * 0.3, x + size * 0.7, y + size * 0.3);
+            ctx.lineTo(x - size * 0.7, y + size * 0.3);
+            ctx.fill();
+
+            // Skull and crossbones
+            ctx.beginPath();
+            ctx.arc(x, y + size * 0.05, size * 0.15, 0, Math.PI * 2);
+            ctx.fillStyle = 'white';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(x - size * 0.2, y + size * 0.2);
+            ctx.lineTo(x + size * 0.2, y + size * 0.3);
+            ctx.moveTo(x + size * 0.2, y + size * 0.2);
+            ctx.lineTo(x - size * 0.2, y + size * 0.3);
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
 
         // Apply effects
         function applyEffect(imageData) {
@@ -803,6 +1672,14 @@
                         return [cx + dist * Math.cos(angle), cy + dist * Math.sin(angle)];
                     });
 
+                case 'wave':
+                    const time = Date.now() / 500;
+                    return applyDistortion(imageData, (x, y) => {
+                        const waveX = Math.sin(y / 20 + time) * 15;
+                        const waveY = Math.sin(x / 25 + time) * 10;
+                        return [x + waveX, y + waveY];
+                    });
+
                 case 'pixelate':
                     const pixelSize = 12;
                     for (let py = 0; py < height; py += pixelSize) {
@@ -828,14 +1705,6 @@
                         if (x < width - offset) data[i + 2] = copy[i + 2 + offset * 4];
                     }
                     return imageData;
-
-                case 'wave':
-                    const time = Date.now() / 500;
-                    return applyDistortion(imageData, (x, y) => {
-                        const waveX = Math.sin(y / 20 + time) * 15;
-                        const waveY = Math.sin(x / 25 + time) * 10;
-                        return [x + waveX, y + waveY];
-                    });
 
                 case 'thermal':
                     for (let i = 0; i < data.length; i += 4) {
@@ -943,7 +1812,7 @@
         }
 
         // Render loop
-        function renderLoop() {
+        async function renderLoop() {
             if (video.readyState === video.HAVE_ENOUGH_DATA) {
                 // Draw mirrored video
                 ctx.save();
@@ -951,10 +1820,20 @@
                 ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
                 ctx.restore();
 
+                // Apply pixel effects
                 if (currentEffect !== 'none') {
                     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                     const processed = applyEffect(imageData);
                     ctx.putImageData(processed, 0, 0);
+                }
+
+                // Face detection and filters
+                if (faceLockEnabled) {
+                    await detectFace();
+                }
+
+                if (faceData && currentFaceFilter !== 'face-none') {
+                    drawFaceFilter(faceData.landmarks);
                 }
             }
             animationId = requestAnimationFrame(renderLoop);
