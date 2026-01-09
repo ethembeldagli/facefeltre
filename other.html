@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Photobooth Filters — Polished Single File</title>
+
+  <!-- Improved styling for a modern, friendly UI -->
+  <style>
+    :root{
+      --bg:#0f1724;
+      --panel:#0b1220;
+      --muted:#9aa4b2;
+      --accent:#7c5cff;
+      --accent-2:#ff7ab6;
+      --glass: rgba(255,255,255,0.04);
+      --glass-2: rgba(255,255,255,0.02);
+      --success:#32d296;
+      --danger:#ff6b6b;
+      --shadow: 0 8px 30px rgba(2,6,23,0.6);
+      --border: rgba(255,255,255,0.04);
+    }
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Arial;color:#e6eef6;background:
+      radial-gradient(1200px 600px at 10% 10%, rgba(124,92,255,0.12), transparent 8%),
+      radial-gradient(800px 400px at 90% 90%, rgba(255,122,182,0.06), transparent 8%),
+      var(--bg);
+    }
+
+/* Top header */
+    header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      padding:14px 20px;
+      backdrop-filter: blur(6px);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-bottom: 1px solid rgba(255,255,255,0.02);
+    }
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{
+      width:42px;height:42px;border-radius:8px;
+      display:inline-grid;place-items:center;
+      background: linear-gradient(135deg,var(--accent),var(--accent-2));
+      box-shadow: 0 6px 20px rgba(124,92,255,0.18), inset 0 -4px 12px rgba(255,255,255,0.06);
+      color:white;font-weight:700;font-size:18px;
+    }
+    h1{margin:0;font-size:16px;letter-spacing:0.2px}
+    .tag{font-size:12px;color:var(--muted)}
+
+/* Controls */
+    .controls{display:flex;gap:8px;align-items:center}
+    .control-row{display:flex;gap:10px;align-items:center}
+    .btn{
+      appearance:none;border:0;padding:8px 12px;border-radius:10px;background:linear-gradient(180deg,var(--glass),var(--glass-2));
+      color:#eaf1ff;font-weight:600;cursor:pointer;font-size:13px;border:1px solid var(--border);
+      display:inline-flex;gap:8px;align-items:center;box-shadow:var(--shadow);transition:transform .12s ease,box-shadow .12s;
+    }
+    .btn:active{transform:translateY(1px)}
+    .btn.primary{background:linear-gradient(180deg,var(--accent),#5e46d9);box-shadow:0 12px 30px rgba(124,92,255,0.22)}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+    .toggle{
+      display:inline-flex;align-items:center;gap:8px;background:transparent;padding:6px 8px;border-radius:999px;border:1px solid rgba(255,255,255,0.03);
+      color:var(--muted)
+    }
+    .small{font-size:13px;padding:6px 8px}
+
+/* Main layout */
+    main{display:flex;gap:16px;padding:18px;height:calc(100vh - 86px);box-sizing:border-box}
+    .camera{flex:1;display:flex;flex-direction:column;gap:12px}
+    .card{
+      border-radius:12px;padding:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border:1px solid var(--border); box-shadow: 0 10px 30px rgba(2,6,23,0.55);
+    }
+
+/* Video area */
+    .video-wrap{
+      position:relative;flex:1;overflow:hidden;border-radius:12px;background:#000;display:flex;align-items:center;justify-content:center;
+      min-height:360px;
+    }
+    video{display:block;max-width:100%;max-height:100%}
+    canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block;pointer-events:none}
+    #overlay{position:absolute;left:0;top:0;right:0;bottom:0;pointer-events:none}
+    .hint{font-size:13px;color:var(--muted)}
+
+/* Sidebar / Effects */
+    aside.sidebar{width:360px;display:flex;flex-direction:column;gap:12px}
+    .effects-list{display:flex;flex-direction:column;gap:8px;overflow:auto;padding-right:6px}
+    .effect-card{
+      display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
+      border:1px solid rgba(255,255,255,0.02);transition:transform .12s ease,box-shadow .12s;
+    }
+    .effect-card:hover{transform:translateY(-4px);box-shadow:0 20px 40px rgba(2,6,23,0.5)}
+    .effect-icon{width:44px;height:44;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:grid;place-items:center;color:white;font-weight:700}
+    .effect-meta{display:flex;flex-direction:column}
+    .effect-name{font-weight:700}
+    .effect-desc{font-size:12px;color:var(--muted)}
+    .effect-controls{margin-left:auto;display:flex;gap:8px;align-items:center}
+    .param{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+
+/* Presets area */
+    .presets{display:flex;gap:8px;flex-wrap:wrap}
+    .preset{padding:8px 10px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02);cursor:pointer;color:var(--muted);font-weight:600}
+    .preset:hover{transform:translateY(-3px)}
+
+/* Overlay handles */
+    #overlay .handle{position:absolute;width:28px;height:28px;border-radius:50%;background:linear-gradient(180deg,#fff,#f3f7ff);color:#222;font-weight:700;border:2px solid rgba(0,0,0,0.5);transform:translate(-50%,-50%);pointer-events:auto;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(2,6,23,0.45)}
+    #overlay .label{position:absolute;background:rgba(2,6,23,0.8);color:#fff;padding:6px 8px;border-radius:8px;font-size:12px;transform:translate(-50%,-160%);white-space:nowrap;pointer-events:none}
+
+/* Footer small */
+    footer{padding:10px 18px;color:var(--muted);font-size:13px}
+
+/* Small screens */
+    @media(max-width:1020px){
+      aside.sidebar{display:none}
+      .video-wrap{min-height:520px}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo">PB</div>
+      <div>
+        <h1>Photobooth Filters</h1>
+        <div class="tag">fun camera filters — draggable, face-locked, save & share</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="control-row">
+        <label class="toggle"><input id="faceLock" type="checkbox" style="margin-right:8px"> Lock to face</label>
+        <button id="togglePresets" class="btn ghost small">Presets</button>
+      </div>
+      <div class="control-row">
+        <button id="captureBtn" class="btn primary small">📸 Capture</button>
+        <button id="downloadMetaBtn" class="btn small">⬇️ Meta</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="camera card">
+      <div class="video-wrap" id="videoCard">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="output"></canvas>
+        <div id="overlay"></div>
+        <div style="position:absolute;left:12px;bottom:12px;background:rgba(0,0,0,0.45);color:#fff;padding:8px 10px;border-radius:10px;font-size:13px">
+          Tip: Allow camera → toggle effects on the right → drag handles to move them
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+        <div class="hint">Effects applied in list order (top → bottom)</div>
+        <div style="display:flex;gap:8px">
+          <button id="showExamples" class="btn ghost small">Examples</button>
+        </div>
+      </div>
+    </div>
+
+    <aside class="sidebar card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div>
+          <div style="font-weight:800">Effects</div>
+          <div style="font-size:13px;color:var(--muted)">Toggle, tweak and reorder</div>
+        </div>
+        <div style="font-size:12px;color:var(--muted)">20 total</div>
+      </div>
+
+      <div class="effects-list" id="effectsList"></div>
+
+      <hr style="border:none;height:1px;background:rgba(255,255,255,0.02);margin:12px 0">
+
+      <div>
+        <div style="font-weight:700">Presets</div>
+        <div class="presets" id="presets">
+          <div class="preset" data-preset="retro">Retro</div>
+          <div class="preset" data-preset="party">Party</div>
+          <div class="preset" data-preset="mono">Monochrome</div>
+          <div class="preset" data-preset="fun">Funny Faces</div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="card" style="margin:18px">
+    Built with getUserMedia and canvas • Face-lock via TensorFlow face-landmarks (optional). Images are processed locally — nothing is uploaded.
+  </footer>
+
+  <!-- single-file JS (model scripts loaded dynamically) -->
+  <script>
+/* ========= App: camera, UI, effects ======== */
+
+/* Small helper for creating DOM elements */
+const $ = (s,ctx=document)=> ctx.querySelector(s);
+const $$ = (s,ctx=document)=> Array.from(ctx.querySelectorAll(s));
+
+/* Elements */
+const video = $('#video');
+const output = $('#output');
+const overlay = $('#overlay');
+const effectsListEl = $('#effectsList');
+const faceLockCheckbox = $('#faceLock');
+const captureBtn = $('#captureBtn');
+const downloadMetaBtn = $('#downloadMetaBtn');
+const togglePresetsBtn = $('#togglePresets');
+const presetsEl = $('#presets');
+
+let ctx = null;
+let W = 640, H = 480;
+output.width = W; output.height = H;
+ctx = output.getContext('2d');
+
+const off = document.createElement('canvas');
+off.width = W; off.height = H;
+const offCtx = off.getContext('2d');
+
+let model = null;
+let face = null;
+let raf = null;
+
+/* ---------- Effects definitions ----------
+   Each effect: id, name, params (default), apply(imageData, params, meta)
+   Implementation focuses on canvas ImageData transforms (synchronous)
+   Note: some operations are CPU-heavy; downscale if needed.
+*/
+function cloneParams(p){ return JSON.parse(JSON.stringify(p)); }
+
+const effectDefs = [
+  {id:'stretch', name:'Stretch', params:{x:0.5,y:0.5,amount:0.6}, apply: twistStretch(true)},
+  {id:'squeeze', name:'Squeeze', params:{x:0.5,y:0.5,amount:0.5}, apply: twistStretch(false)},
+  {id:'twirl', name:'Twirl', params:{x:0.5,y:0.5,radius:120,angle:2.0}, apply: twirl},
+  {id:'bulge', name:'Bulge', params:{x:0.5,y:0.5,radius:120,strength:0.7}, apply: bulge},
+  {id:'pinch', name:'Pinch', params:{x:0.5,y:0.5,radius:100,strength:0.6}, apply: pinch},
+  {id:'kaleido', name:'Kaleidoscope', params:{slices:6}, apply: kaleidoscope},
+  {id:'mirror', name:'Mirror', params:{axis:'x'}, apply: mirror},
+  {id:'pixelate', name:'Pixelate', params:{size:10}, apply: pixelate},
+  {id:'posterize', name:'Posterize', params:{levels:6}, apply: posterize},
+  {id:'grayscale', name:'Grayscale', params:{}, apply: grayscale},
+  {id:'sepia', name:'Sepia', params:{}, apply: sepia},
+  {id:'invert', name:'Invert', params:{}, apply: invert},
+  {id:'rgbsplit', name:'RGB Split', params:{amount:6}, apply: rgbSplit},
+  {id:'vignette', name:'Vignette', params:{strength:0.6}, apply: vignette},
+  {id:'blur', name:'Blur', params:{radius:2}, apply: fastBlur},
+  {id:'sharpen', name:'Sharpen', params:{amount:1}, apply: sharpen},
+  {id:'edge', name:'Edge Detect', params:{}, apply: edgeDetect},
+  {id:'hueshift', name:'Hue Shift', params:{deg:45}, apply: hueShift},
+  {id:'grain', name:'Noise / Grain', params:{amount:0.06}, apply: grain},
+  {id:'sinewarp', name:'Sine Warp', params:{amp:12,frequency:20}, apply: sineWarp},
+];
+
+/* State: list order + per-effect active flag, params, position */
+let state = effectDefs.map(e => ({
+  id: e.id,
+  active: false,
+  params: cloneParams(e.params),
+  pos: {x:0.5,y:0.5}
+}));
+
+/* ---------- UI building ---------- */
+function buildUI(){
+  effectsListEl.innerHTML = '';
+  state.forEach((s,i) => {
+    const def = effectDefs.find(d=>d.id===s.id);
+    const card = document.createElement('div');
+    card.className = 'effect-card';
+    card.dataset.index = i;
+
+    const icon = document.createElement('div');
+    icon.className = 'effect-icon';
+    icon.textContent = def.name.split(' ').map(w=>w[0]).slice(0,2).join('');
+    card.appendChild(icon);
+
+    const meta = document.createElement('div');
+    meta.className = 'effect-meta';
+    const title = document.createElement('div'); title.className='effect-name'; title.textContent = def.name;
+    const desc = document.createElement('div'); desc.className='effect-desc'; desc.textContent = def.id;
+    meta.appendChild(title); meta.appendChild(desc);
+    card.appendChild(meta);
+
+    const controls = document.createElement('div');
+    controls.className = 'effect-controls';
+
+    const toggle = document.createElement('button');
+    toggle.className = 'btn small';
+    toggle.textContent = s.active ? 'ON' : 'OFF';
+    toggle.style.minWidth = '56px';
+    toggle.addEventListener('click', () => { s.active = !s.active; toggle.textContent = s.active ? 'ON' : 'OFF'; renderOverlay(); });
+
+    const up = document.createElement('button'); up.className='btn small ghost'; up.textContent='↑';
+    up.addEventListener('click', () => { if(i>0){ arrayMove(state,i,i-1); buildUI(); }});
+
+    const down = document.createElement('button'); down.className='btn small ghost'; down.textContent='↓';
+    down.addEventListener('click', () => { if(i<state.length-1){ arrayMove(state,i,i+1); buildUI(); }});
+
+    const drag = document.createElement('button'); drag.className='btn small ghost'; drag.textContent='✦';
+    drag.addEventListener('pointerdown', (ev) => { ev.preventDefault(); startDragEffect(s, ev); });
+
+    controls.appendChild(toggle);
+    controls.appendChild(up); controls.appendChild(down);
+    controls.appendChild(drag);
+    card.appendChild(controls);
+
+    // params slider compact
+    const paramsArea = document.createElement('div'); paramsArea.className='param';
+    for(const k in s.params){
+      const val = s.params[k];
+      const row = document.createElement('div'); row.style.display='flex'; row.style.alignItems='center'; row.style.gap='8px';
+      const label = document.createElement('div'); label.style.minWidth='56px'; label.style.fontSize='12px'; label.style.color='var(--muted)'; label.textContent=k;
+      let input;
+      if(typeof val === 'number'){
+        input = document.createElement('input');
+        input.type='range';
+        input.min = (k==='amount'?-2:0);
+        input.max = (k==='amount'?2:(k==='radius'?300:100));
+        input.step = (k==='amount'?0.01:1);
+        input.value = val;
+        input.addEventListener('input', ()=> { s.params[k] = parseFloat(input.value); });
+      } else {
+        input = document.createElement('input'); input.type='text'; input.value = val;
+        input.addEventListener('change', ()=> s.params[k] = input.value);
+      }
+      input.style.flex = '1';
+      row.appendChild(label); row.appendChild(input);
+      paramsArea.appendChild(row);
+    }
+    card.appendChild(paramsArea);
+
+    effectsListEl.appendChild(card);
+  });
+}
+
+/* helper: move array element */
+function arrayMove(arr, from, to){
+  const it = arr.splice(from,1)[0];
+  arr.splice(to,0,it);
+}
+
+/* ------------- Drag to position an effect ------------- */
+function startDragEffect(s, ev){
+  overlay.style.pointerEvents = 'auto';
+  const rect = output.getBoundingClientRect();
+  function onMove(e){
+    const clientX = (e.touches ? e.touches[0].clientX : e.clientX);
+    const clientY = (e.touches ? e.touches[0].clientY : e.clientY);
+    const x = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const y = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+    s.pos.x = x; s.pos.y = y;
+    renderOverlay();
+  }
+  function done(){
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', done);
+    overlay.style.pointerEvents = 'none';
+  }
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', done);
+}
+
+/* ------------- EFFECT IMPLEMENTATIONS -------------
+   Many are adapted from classic pixel mapping on ImageData.
+   These are synchronous CPU-side transforms. */
+function twistStretch(makeStretch){
+  return function(src, params){
+    const amount = params.amount || 0.5;
+    const centerX = (params.x !== undefined) ? (params.x * src.width) : (src.width/2);
+    const centerY = (params.y !== undefined) ? (params.y * src.height) : (src.height/2);
+    const w = src.width, h = src.height;
+    const out = new ImageData(w,h);
+    for(let j=0;j<h;j++){
+      for(let i=0;i<w;i++){
+        const nx = (i - centerX)/w, ny = (j - centerY)/h;
+        const rx = nx * (1 + amount * (makeStretch ? 1 : -1) * Math.abs(ny));
+        const ry = ny * (1 + amount * (makeStretch ? 1 : -1) * Math.abs(nx));
+        const sx = Math.floor((rx + centerX/w) * w);
+        const sy = Math.floor((ry + centerY/h) * h);
+        const di = (j*w+i)*4;
+        if(sx>=0 && sx<w && sy>=0 && sy<h){
+          const si = (sy*w+sx)*4;
+          out.data[di]   = src.data[si];
+          out.data[di+1] = src.data[si+1];
+          out.data[di+2] = src.data[si+2];
+          out.data[di+3] = src.data[si+3];
+        } else {
+          out.data[di]=0; out.data[di+1]=0; out.data[di+2]=0; out.data[di+3]=255;
+        }
+      }
+    }
+    return out;
+  };
+}
+
+function mapTwist(src, params, inverse=false){
+  const x = (params.x!==undefined) ? params.x * src.width : src.width/2;
+  const y = (params.y!==undefined) ? params.y * src.height : src.height/2;
+  const radius = params.radius || Math.min(src.width, src.height)/4;
+  const angle = params.angle || 1.5;
+  const w = src.width, h = src.height;
+  const cx = x, cy = y;
+  const out = new ImageData(w,h);
+  for(let j=0;j<h;j++){
+    for(let i=0;i<w;i++){
+      const dx = i - cx, dy = j - cy;
+      const d = Math.sqrt(dx*dx + dy*dy);
+      const di = (j*w+i)*4;
+      if(d < radius){
+        const proportion = (radius - d) / radius;
+        const theta = angle * proportion * proportion * (inverse ? -1 : 1);
+        const s = Math.sin(theta), c = Math.cos(theta);
+        const rx = Math.round(cx + (dx*c - dy*s));
+        const ry = Math.round(cy + (dx*s + dy*c));
+        if(rx>=0 && rx<w && ry>=0 && ry<h){
+          const si = (ry*w+rx)*4;
+          out.data[di]   = src.data[si];
+          out.data[di+1] = src.data[si+1];
+          out.data[di+2] = src.data[si+2];
+          out.data[di+3] = src.data[si+3];
+        } else {
+          out.data[di]=0; out.data[di+1]=0; out.data[di+2]=0; out.data[di+3]=255;
+        }
+      } else {
+        const si = (j*w+i)*4;
+        out.data[di]   = src.data[si];
+        out.data[di+1] = src.data[si+1];
+        out.data[di+2] = src.data[si+2];
+        out.data[di+3] = src.data[si+3];
+      }
+    }
+  }
+  return out;
+}
+function twirl(src, params){ return mapTwist(src, params, false); }
+function bulge(src, params){
+  const x = (params.x!==undefined) ? params.x * src.width : src.width/2;
+  const y = (params.y!==undefined) ? params.y * src.height : src.height/2;
+  const radius = params.radius || Math.min(src.width, src.height)/4;
+  const strength = params.strength || 0.7;
+  const w = src.width, h = src.height;
+  const cx = x, cy = y;
+  const out = new ImageData(w,h);
+  for(let j=0;j<h;j++){
+    for(let i=0;i<w;i++){
+      const dx = i-cx, dy = j-cy;
+      const d = Math.sqrt(dx*dx+dy*dy);
+      const di = (j*w+i)*4;
+      if(d<radius){
+        const rn = d/radius;
+        const dist = Math.pow(rn, strength);
+        const sx = Math.round(cx + dx * dist);
+        const sy = Math.round(cy + dy * dist);
+        if(sx>=0 && sx<w && sy>=0 && sy<h){
+          const si = (sy*w+sx)*4;
+          out.data[di]   = src.data[si];
+          out.data[di+1] = src.data[si+1];
+          out.data[di+2] = src.data[si+2];
+          out.data[di+3] = src.data[si+3];
+        } else {
+          out.data[di]=0; out.data[di+1]=0; out.data[di+2]=0; out.data[di+3]=255;
+        }
+      } else {
+        const si = (j*w+i)*4;
+        out.data[di]   = src.data[si];
+        out.data[di+1] = src.data[si+1];
+        out.data[di+2] = src.data[si+2];
+        out.data[di+3] = src.data[si+3];
+      }
+    }
+  }
+  return out;
+}
+function pinch(src, params){ const p = Object.assign({}, params, {strength: -Math.abs(params.strength||0.6)}); return bulge(src,p); }
+function kaleidoscope(src, params){
+  const slices = params.slices || 6;
+  const w = src.width, h = src.height;
+  const cx = w/2, cy = h/2;
+  const out = new ImageData(w,h);
+  const sector = (2*Math.PI)/slices;
+  for(let j=0;j<h;j++){
+    for(let i=0;i<w;i++){
+      const dx = i-cx, dy = j-cy;
+      let ang = Math.atan2(dy,dx);
+      const r = Math.sqrt(dx*dx+dy*dy);
+      ang = ((ang + Math.PI) % sector) + (-(sector/2));
+      const sx = Math.round(cx + Math.cos(ang)*r);
+      const sy = Math.round(cy + Math.sin(ang)*r);
+      const di = (j*w+i)*4;
+      if(sx>=0 && sx<w && sy>=0 && sy<h){
+        const si=(sy*w+sx)*4;
+        out.data[di]=src.data[si]; out.data[di+1]=src.data[si+1]; out.data[di+2]=src.data[si+2]; out.data[di+3]=src.data[si+3];
+      } else { out.data[di]=0; out.data[di+1]=0; out.data[di+2]=0; out.data[di+3]=255; }
+    }
+  }
+  return out;
+}
+function mirror(src){ const w = src.width, h = src.height; const out = new ImageData(w,h); for(let y=0;y<h;y++){ for(let x=0;x<w;x++){ const sx = w-1-x; const di=(y*w+x)*4; const si=(y*w+sx)*4; out.data[di]=src.data[si]; out.data[di+1]=src.data[si+1]; out.data[di+2]=src.data[si+2]; out.data[di+3]=src.data[si+3]; }} return out; }
+function pixelate(src, params){
+  const size = Math.max(1, Math.round(params.size||8));
+  const w = src.width, h = src.height;
+  const out = new ImageData(w,h);
+  for(let y=0;y<h;y+=size){
+    for(let x=0;x<w;x+=size){
+      let r=0,g=0,b=0,count=0;
+      for(let yy=0;yy<size;yy++){
+        for(let xx=0;xx<size;xx++){
+          const xi=x+xx, yi=y+yy;
+          if(xi<w && yi<h){
+            const si=(yi*w+xi)*4;
+            r+=src.data[si]; g+=src.data[si+1]; b+=src.data[si+2]; count++;
+          }
+        }
+      }
+      r=Math.round(r/count); g=Math.round(g/count); b=Math.round(b/count);
+      for(let yy=0;yy<size;yy++){
+        for(let xx=0;xx<size;xx++){
+          const xi=x+xx, yi=y+yy;
+          if(xi<w && yi<h){
+            const di=(yi*w+xi)*4;
+            out.data[di]=r; out.data[di+1]=g; out.data[di+2]=b; out.data[di+3]=255;
+          }
+        }
+      }
+    }
+  }
+  return out;
+}
+function posterize(src, params){ const levels = Math.max(2, Math.round(params.levels||6)); const step = 255/(levels-1); const out = new ImageData(src.width,src.height); for(let i=0;i<src.data.length;i+=4){ out.data[i]=Math.round(src.data[i]/step)*step; out.data[i+1]=Math.round(src.data[i+1]/step)*step; out.data[i+2]=Math.round(src.data[i+2]/step)*step; out.data[i+3]=src.data[i+3]; } return out; }
+function grayscale(src){ const out = new ImageData(src.width,src.height); for(let i=0;i<src.data.length;i+=4){ const v = Math.round(0.299*src.data[i]+0.587*src.data[i+1]+0.114*src.data[i+2]); out.data[i]=out.data[i+1]=out.data[i+2]=v; out.data[i+3]=src.data[i+3]; } return out; }
+function sepia(src){ const out = new ImageData(src.width,src.height); for(let i=0;i<src.data.length;i+=4){ const r=src.data[i], g=src.data[i+1], b=src.data[i+2]; out.data[i]=Math.min(255, Math.round(0.393*r+0.769*g+0.189*b)); out.data[i+1]=Math.min(255, Math.round(0.349*r+0.686*g+0.168*b)); out.data[i+2]=Math.min(255, Math.round(0.272*r+0.534*g+0.131*b)); out.data[i+3]=src.data[i+3]; } return out; }
+function invert(src){ const out = new ImageData(src.width,src.height); for(let i=0;i<src.data.length;i+=4){ out.data[i]=255-src.data[i]; out.data[i+1]=255-src.data[i+1]; out.data[i+2]=255-src.data[i+2]; out.data[i+3]=src.data[i+3]; } return out; }
+function rgbSplit(src, params){ const amt = params.amount||6; const w=src.width,h=src.height; const out = new ImageData(w,h); for(let y=0;y<h;y++){ for(let x=0;x<w;x++){ const di=(y*w+x)*4; const rsi=((y)*w+Math.max(0,Math.min(w-1,x-amt)))*4; const gsi=((y)*w+Math.max(0,Math.min(w-1,x)))*4; const bsi=((y)*w+Math.max(0,Math.min(w-1,x+amt)))*4; out.data[di]=src.data[rsi]; out.data[di+1]=src.data[gsi+1]; out.data[di+2]=src.data[bsi+2]; out.data[di+3]=255; }} return out; }
+function vignette(src, params){ const s = params.strength||0.6; const w=src.width,h=src.height; const cx=w/2,cy=h/2; const maxd=Math.sqrt(cx*cx+cy*cy); const out=new ImageData(w,h); for(let y=0;y<h;y++){ for(let x=0;x<w;x++){ const di=(y*w+x)*4; const dx=x-cx, dy=y-cy; const d=Math.sqrt(dx*dx+dy*dy); const fac = Math.max(0,1 - s*(d/maxd)); out.data[di]=src.data[di]*fac; out.data[di+1]=src.data[di+1]*fac; out.data[di+2]=src.data[di+2]*fac; out.data[di+3]=src.data[di+3]; }} return out; }
+function fastBlur(src, params){ const r = Math.max(1,Math.round(params.radius||2)); const w=src.width,h=src.height; const out=new ImageData(w,h); for(let y=0;y<h;y++){ for(let x=0;x<w;x++){ let rsum=0,gsum=0,bsum=0,count=0; for(let yy=-r;yy<=r;yy++){ for(let xx=-r;xx<=r;xx++){ const xi=Math.min(w-1,Math.max(0,x+xx)); const yi=Math.min(h-1,Math.max(0,y+yy)); const si=(yi*w+xi)*4; rsum+=src.data[si]; gsum+=src.data[si+1]; bsum+=src.data[si+2]; count++; }} const di=(y*w+x)*4; out.data[di]=rsum/count; out.data[di+1]=gsum/count; out.data[di+2]=bsum/count; out.data[di+3]=255; }} return out; }
+function sharpen(src, params){ const amt = params.amount||1; const w=src.width,h=src.height; const out=new ImageData(w,h); for(let y=0;y<h;y++){ for(let x=0;x<w;x++){ const di=(y*w+x)*4; const centerIdx=(y*w+x)*4; const centerR=src.data[centerIdx], centerG=src.data[centerIdx+1], centerB=src.data[centerIdx+2]; let neighR=0,neighG=0,neighB=0; for(let yy=-1;yy<=1;yy++){ for(let xx=-1;xx<=1;xx++){ if(xx===0&&yy===0) continue; const xi=Math.min(w-1,Math.max(0,x+xx)); const yi=Math.min(h-1,Math.max(0,y+yy)); const si=(yi*w+xi)*4; neighR+=src.data[si]; neighG+=src.data[si+1]; neighB+=src.data[si+2]; }} let r = Math.round((1+4*amt)*centerR - (amt*neighR)); let g = Math.round((1+4*amt)*centerG - (amt*neighG)); let b = Math.round((1+4*amt)*centerB - (amt*neighB)); out.data[di]=Math.min(255,Math.max(0,r)); out.data[di+1]=Math.min(255,Math.max(0,g)); out.data[di+2]=Math.min(255,Math.max(0,b)); out.data[di+3]=255; }} return out; }
+function edgeDetect(src){ const w=src.width,h=src.height; const out=new ImageData(w,h); const kernel=[-1,-1,-1,-1,8,-1,-1,-1,-1]; for(let y=0;y<h;y++){ for(let x=0;x<w;x++){ let r=0,g=0,b=0; for(let ky=-1;ky<=1;ky++){ for(let kx=-1;kx<=1;kx++){ const xi=Math.min(w-1,Math.max(0,x+kx)); const yi=Math.min(h-1,Math.max(0,y+ky)); const si=(yi*w+xi)*4; const kval=kernel[(ky+1)*3 + (kx+1)]; r+=src.data[si]*kval; g+=src.data[si+1]*kval; b+=src.data[si+2]*kval; }} const di=(y*w+x)*4; out.data[di]=Math.min(255,Math.max(0,r+128)); out.data[di+1]=Math.min(255,Math.max(0,g+128)); out.data[di+2]=Math.min(255,Math.max(0,b+128)); out.data[di+3]=255; }} return out; }
+function hueShift(src, params){ const deg = (params.deg||0) * Math.PI/180; const w=src.width,h=src.height; const out=new ImageData(w,h); for(let i=0;i<src.data.length;i+=4){ const r=src.data[i]/255, g=src.data[i+1]/255, b=src.data[i+2]/255; const u = Math.cos(deg), v=Math.sin(deg); const newR = (0.299+0.701*u+0.168*v)*r + (0.587-0.587*u+0.330*v)*g + (0.114-0.114*u-0.497*v)*b; const newG = (0.299-0.299*u-0.328*v)*r + (0.587+0.413*u+0.035*v)*g + (0.114-0.114*u+0.292*v)*b; const newB = (0.299-0.3*u+1.25*v)*r + (0.587-0.588*u-1.05*v)*g + (0.114+0.886*u-0.203*v)*b; out.data[i]=Math.min(255,Math.max(0,Math.round(newR*255))); out.data[i+1]=Math.min(255,Math.max(0,Math.round(newG*255))); out.data[i+2]=Math.min(255,Math.max(0,Math.round(newB*255))); out.data[i+3]=src.data[i+3]; } return out; }
+function grain(src, params){ const amt = params.amount||0.06; for(let i=0;i<src.data.length;i+=4){ const n = (Math.random()*2-1)*amt*255; src.data[i]=Math.min(255,Math.max(0,src.data[i]+n)); src.data[i+1]=Math.min(255,Math.max(0,src.data[i+1]+n)); src.data[i+2]=Math.min(255,Math.max(0,src.data[i+2]+n)); } return src; }
+function sineWarp(src, params){ const amp = params.amp||12, freq = params.frequency||20; const w=src.width,h=src.height; const out=new ImageData(w,h); for(let y=0;y<h;y++){ for(let x=0;x<w;x++){ const sx = Math.round(x + Math.sin((y/freq))*amp); const sy = y; const di=(y*w+x)*4; if(sx>=0 && sx<w){ const si=(sy*w+sx)*4; out.data[di]=src.data[si]; out.data[di+1]=src.data[si+1]; out.data[di+2]=src.data[si+2]; out.data[di+3]=src.data[si+3]; } else { out.data[di]=0; out.data[di+1]=0; out.data[di+2]=0; out.data[di+3]=255; } }} return out; }
+
+/* ---------- Camera & face model ---------- */
+async function initCamera(){
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({video:{width:1280, height:720}, audio:false});
+    video.srcObject = stream;
+    await video.play();
+    // size canvas
+    W = video.videoWidth || 640; H = video.videoHeight || 480;
+    output.width = W; output.height = H;
+    off.width = W; off.height = H;
+    renderOverlay();
+  }catch(e){
+    alert('Camera access required: ' + (e.message || e));
+  }
+}
+
+async function loadFaceModel(){
+  try{
+    // load TF scripts dynamically
+    await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core@4.9.0/dist/tf-core.min.js');
+    await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@4.9.0/dist/tf-backend-webgl.min.js');
+    await loadScript('https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@2.0.0/dist/face-landmarks-detection.min.js');
+    await tf.setBackend('webgl');
+    model = await faceLandmarksDetection.load(faceLandmarksDetection.SupportedPackages.mediapipeFacemesh);
+    console.info('face model loaded');
+  }catch(e){
+    console.warn('face model failed:', e);
+  }
+}
+
+function loadScript(src){
+  return new Promise((res,rej)=>{
+    const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s);
+  });
+}
+
+async function detectFace(){
+  if(!model) return;
+  try{
+    const preds = await model.estimateFaces({input: video, returnTensors: false, flipHorizontal: false});
+    if(preds && preds.length>0){
+      const p = preds[0];
+      const mesh = p.scaledMesh || p.keypoints;
+      let cx=0, cy=0;
+      if(mesh && mesh.length>0){
+        const nose = mesh[1] || mesh[4] || mesh[0];
+        cx = nose[0]; cy = nose[1];
+      } else if(p.boundingBox){
+        const tl = p.boundingBox.topLeft, br = p.boundingBox.bottomRight;
+        cx = (tl[0]+br[0])/2; cy = (tl[1]+br[1])/2;
+      }
+      face = {x: cx / W, y: cy / H, raw: p};
+    } else {
+      face = null;
+    }
+  }catch(e){ console.warn('face detect failed',e);}
+}
+
+/* ---------- render loop ---------- */
+let lastFaceDetect = 0;
+async function renderLoop(){
+  // draw video to offscreen
+  offCtx.drawImage(video, 0, 0, off.width, off.height);
+  let img = offCtx.getImageData(0,0,off.width,off.height);
+
+  // periodic face detection if enabled
+  const now = performance.now();
+  if(faceLockCheckbox.checked && (!model || (model && now - lastFaceDetect > 250))){
+    lastFaceDetect = now;
+    await detectFace();
+  }
+
+  // apply active effects in order
+  for(const s of state){
+    if(!s.active) continue;
+    const def = effectDefs.find(d=>d.id===s.id);
+    if(!def) continue;
+    const params = Object.assign({}, s.params);
+    // position: face or manual
+    if(faceLockCheckbox.checked && face){ params.x = face.x; params.y = face.y; }
+    else { params.x = s.pos.x; params.y = s.pos.y; }
+    // ensure numeric radius mapping: if radius looks <=2 treat as percent? keep px for now
+    const out = def.apply(img, params, {face});
+    img = out;
+  }
+
+  // push to visible canvas
+  try { ctx.putImageData(img, 0, 0); } catch(e) { /* cross-origin? shouldn't happen */ }
+
+  renderOverlay();
+
+  raf = requestAnimationFrame(renderLoop);
+}
+
+/* ---------- overlay handles (visual only) ---------- */
+function renderOverlay(){
+  overlay.innerHTML = '';
+  state.forEach(s => {
+    if(!s.active) return;
+    const pos = (faceLockCheckbox.checked && face) ? {x: face.x, y: face.y} : s.pos;
+    const left = (pos.x * 100) + '%';
+    const top = (pos.y * 100) + '%';
+    const h = document.createElement('div'); h.className='handle'; h.style.left = left; h.style.top = top; h.textContent = '○';
+    const label = document.createElement('div'); label.className='label'; label.textContent = effectDefs.find(d=>d.id===s.id).name;
+    label.style.left = left; label.style.top = top;
+    overlay.appendChild(h); overlay.appendChild(label);
+  });
+}
+
+/* ---------- capture & metadata ---------- */
+let latestMeta = {state: null, timestamp: null, dataURL: null};
+
+captureBtn.addEventListener('click', ()=>{
+  // create momentary flash effect
+  const flash = document.createElement('div');
+  flash.style.position='absolute'; flash.style.left=0; flash.style.top=0; flash.style.right=0; flash.style.bottom=0;
+  flash.style.background='#fff'; flash.style.opacity='0.0'; flash.style.pointerEvents='none';
+  flash.style.transition='opacity 150ms ease';
+  document.getElementById('videoCard').appendChild(flash);
+  requestAnimationFrame(()=> flash.style.opacity='0.9');
+  setTimeout(()=> flash.style.opacity='0', 140);
+  setTimeout(()=> flash.remove(), 420);
+
+  const data = output.toDataURL('image/png');
+  const a = document.createElement('a'); a.href = data; a.download = 'photobooth.png'; a.click();
+  latestMeta = {state: JSON.parse(JSON.stringify(state)), timestamp: new Date().toISOString(), dataURL: data};
+});
+
+downloadMetaBtn.addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(latestMeta,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'photobooth-metadata.json'; a.click();
+  URL.revokeObjectURL(url);
+});
+
+/* presets */
+togglePresetsBtn.addEventListener('click', ()=> presetsEl.classList.toggle('hidden'));
+presetsEl.addEventListener('click', (ev)=>{
+  const p = ev.target.closest('.preset');
+  if(!p) return;
+  applyPreset(p.dataset.preset);
+});
+
+function applyPreset(name){
+  if(name==='retro'){
+    state.forEach(s=> s.active=false);
+    setActive('sepia', true); setActive('grain', true); setActive('posterize', true);
+  } else if(name==='party'){
+    state.forEach(s=> s.active=false);
+    setActive('rgbsplit', true); setActive('kaleido', true); setActive('sinewarp', true);
+  } else if(name==='mono'){
+    state.forEach(s=> s.active=false);
+    setActive('grayscale', true);
+  } else if(name==='fun'){
+    state.forEach(s=> s.active=false);
+    setActive('twirl', true); setActive('stretch', true); setActive('pinch', true);
+  }
+  buildUI();
+}
+function setActive(id, val){ const s = state.find(x=>x.id===id); if(s) s.active = !!val; }
+
+/* ---------- init ---------- */
+(async function start(){
+  buildUI();
+  await initCamera();
+  // attempt to load face model in background (optional)
+  loadFaceModel().catch(()=>console.info('face model skipped'));
+  // start rendering
+  if(raf) cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(renderLoop);
+})();
+
+/* expose state for debugging */
+window.__pb_state = state;
+
+/* end of script */
+  </script>
+</body>
+</html>
